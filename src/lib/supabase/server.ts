@@ -1,0 +1,27 @@
+// src/lib/supabase/server.ts
+import { createServerClient } from '@supabase/ssr';
+import { cookies } from 'next/headers';
+import { Database } from '@/types/supabase';
+import { supabaseConfig } from './config';
+
+export const createServerSupabaseClient = () => {
+  const cookieStore = cookies();
+  
+  return createServerClient<Database>(
+    supabaseConfig.supabaseUrl,
+    supabaseConfig.supabaseKey,
+    {
+      cookies: {
+        get(name: string) {
+          return cookieStore.get(name)?.value;
+        },
+        set(name: string, value: string, options: any) {
+          cookieStore.set(name, value, options);
+        },
+        remove(name: string, options: any) {
+          cookieStore.set(name, '', { ...options, maxAge: 0 });
+        },
+      },
+    }
+  );
+};

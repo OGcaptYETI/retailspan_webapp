@@ -1,4 +1,4 @@
-// File: src/app/components/atoms/typography/Text.tsx
+// app/components/atoms/typography/Text.tsx
 import * as React from "react"
 import { cva, type VariantProps } from "class-variance-authority"
 import { cn } from "@/lib/utils/cn"
@@ -13,9 +13,16 @@ const textVariants = cva("text-foreground", {
       small: "text-sm font-medium leading-none",
       muted: "text-sm text-muted-foreground",
     },
+    size: {
+      xs: "text-xs",
+      sm: "text-sm",
+      base: "text-base",
+      lg: "text-lg",
+    }
   },
   defaultVariants: {
     variant: "default",
+    size: "base",
   },
 })
 
@@ -26,12 +33,12 @@ export interface TextProps
 }
 
 const Text = React.forwardRef<HTMLParagraphElement, TextProps>(
-  ({ className, variant, as: Component = "p", ...props }, ref) => {
-    const Comp = Component as any
+  ({ className, variant, size, as: Component = "p", ...props }, ref) => {
+    const Comp = Component as React.ElementType
     return (
       <Comp
         ref={ref}
-        className={cn(textVariants({ variant, className }))}
+        className={cn(textVariants({ variant, size, className }))}
         {...props}
       />
     )

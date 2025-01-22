@@ -1,32 +1,123 @@
-import { createServerSupabaseClient } from '../supabase/client'
-import { redirect } from 'next/navigation'
+// lib/auth/utils.ts
 
+import { useEffect, useState } from 'react';
+import { User, Session } from '@supabase/supabase-js';
+import { supabase } from '../supabase/client';
+
+interface UserProfile {
+  id: string;
+  user_id: string;
+  role: string;
+  organization_id: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+interface UseUserReturn {
+  user: User | null;
+  session: Session | null;
+  profile: UserProfile | null;
+  isAdmin: boolean;
+  isLoading: boolean;
+  error: Error | null;
+}
+
+export function useUser(): UseUserReturn {
+  const [session, setSession] = useState<Session | null>(null);
+  const [user, setUser] = useState<User | null>(null);
+  const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
+
+  useEffect(() => {
+    // Get initial session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      setUser(session?.user ?? null);
+    });
+
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+      setUser(session?.user ?? null);
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, []);
+
+  // Fetch user profile when user changes
+  useEffect(() => {
+    async function loadProfile() {
+      if (!user) {
+        setProfile(null);
+        setIsLoading(false);
+        return;
+      }
+
+      try {
+        const { data, error } = await supabase
+          .from('user_profiles')
+          .select('*')
+          .eq('user_id', user.id)
+          .single();
+
+        if (error) throw error;
+        setProfile(data);
+      } catch (err) {
+        console.error('Error loading user profile:', err);
+        setError(err instanceof Error ? err : new Error('Failed to load user profile'));
+      } finally {
+        setIsLoading(false);
+      }
+    }
+
+    loadProfile();
+  }, [user]);
+
+  // Determine if user is admin based on profile role
+  const isAdmin = profile?.role === 'admin';
+
+  return {
+    user,
+    session,
+    profile,
+    isAdmin,
+    isLoading,
+    error
+  };
+}
+
+// Re-export existing auth utilities
 export async function getSession() {
-  const supabase = createServerSupabaseClient()
-  
-  try {
-    const {
-      data: { session },
-    } = await supabase.auth.getSession()
-    
-    return session
-  } catch (error) {
-    console.error('Error:', error)
-    return null
-  }
+  const { data: { session } } = await supabase.auth.getSession();
+  return session;
 }
 
 export async function requireAuth() {
-  const session = await getSession()
-
+  const session = await getSession();
+  
   if (!session) {
-    redirect('/auth/login')
+    window.location.href = '/auth/login';
+    return null;
   }
-
-  return session
+  
+  return session;
 }
 
-export async function getUser() {
-  const session = await getSession()
-  return session?.user ?? null
+export async function getUserProfile(userId: string) {
+  try {
+    const { data, error } = await supabase
+      .from('user_profiles')
+      .select('*')
+      .eq('user_id', userId)
+      .single();
+
+    if (error) throw error;
+    return data;
+  } catch (error) {
+    console.error('Profile error:', error);
+    return null;
+  }
 }

@@ -1,37 +1,43 @@
-"use client";
+"use client"
 
-import * as React from "react";
-import { useToast } from "./use-toast";
-import { ToastProps } from "./use-toast";
+import * as React from "react"
+import {
+  ToastProvider,
+  ToastViewport,
+  Toast,
+  ToastTitle,
+  ToastDescription,
+  ToastClose,
+} from "./toast"
 
-// This is just an example "Toaster" component that reads the toast state and
-// renders them. Adjust the markup/styling as needed:
-export function Toaster() {
-  const { toasts } = useToast();
-
-  return (
-    <div
-      className="fixed top-0 right-0 z-50 flex flex-col gap-2 p-4"
-      aria-live="assertive"
-    >
-      {toasts.map((toast) => (
-        <ToastItem key={toast.id} {...toast} />
-      ))}
-    </div>
-  );
+type ToasterProps = {
+  toasts: Array<{
+    id: string;
+    title?: string | React.ReactNode;
+    description?: string | React.ReactNode;
+    action?: React.ReactNode;
+    open: boolean;
+    onOpenChange?: (open: boolean) => void;
+    variant?: "default" | "destructive";
+  }>;
 }
 
-// Example single toast item component
-function ToastItem({ title, description, action, open }: ToastProps) {
-  if (!open) {
-    return null;
-  }
-
+export function Toaster(props: ToasterProps) {
   return (
-    <div className="pointer-events-auto rounded-md bg-white p-4 shadow">
-      {title ? <p className="font-semibold">{title}</p> : null}
-      {description ? <p className="text-sm">{description}</p> : null}
-      {action}
-    </div>
-  );
+    <ToastProvider>
+      {props.toasts.map(function ({ id, title, description, action, ...props }: { id: string; title?: string | React.ReactNode; description?: string | React.ReactNode; action?: React.ReactNode; open: boolean; onOpenChange?: (open: boolean) => void; variant?: "default" | "destructive" }) {
+        return (
+          <Toast key={id} {...props}>
+            <div className="grid gap-1">
+              {title && <ToastTitle>{title}</ToastTitle>}
+              {description && <ToastDescription>{description}</ToastDescription>}
+            </div>
+            {action}
+            <ToastClose />
+          </Toast>
+        )
+      })}
+      <ToastViewport />
+    </ToastProvider>
+  )
 }

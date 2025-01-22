@@ -1,14 +1,40 @@
-export type Json =
-  | string
-  | number
-  | boolean
-  | null
-  | { [key: string]: Json | undefined }
-  | Json[]
+// ./supabase.ts
+export type Json = {
+  [key: string]: string | number | boolean | Json | Json[];
+};
 
 export interface Database {
   public: {
     Tables: {
+      organizations: {
+        Row: {
+          id: string
+          created_at: string
+          updated_at: string
+          name: string
+          subscription_status: string
+          trial_ends_at: string
+          settings: Json
+        }
+        Insert: {
+          id?: string
+          created_at?: string
+          updated_at?: string
+          name: string
+          subscription_status?: string
+          trial_ends_at?: string
+          settings?: Json
+        }
+        Update: {
+          id?: string
+          created_at?: string
+          updated_at?: string
+          name?: string
+          subscription_status?: string
+          trial_ends_at?: string
+          settings?: Json
+        }
+      }
       products: {
         Row: {
           id: string
@@ -21,19 +47,14 @@ export interface Database {
           brand: string
           category: string
           subcategory: string | null
+          price: number
+          cost: number
           width: number
           height: number
           depth: number
-          weight: number | null
-          case_pack: number
-          case_width: number | null
-          case_height: number | null
-          case_depth: number | null
-          case_weight: number | null
-          base_price: number
-          current_price: number
+          weight: number
           image_url: string | null
-          is_active: boolean
+          stock: number
           organization_id: string
         }
         Insert: {
@@ -47,19 +68,14 @@ export interface Database {
           brand: string
           category: string
           subcategory?: string | null
+          price: number
+          cost: number
           width: number
           height: number
           depth: number
-          weight?: number | null
-          case_pack: number
-          case_width?: number | null
-          case_height?: number | null
-          case_depth?: number | null
-          case_weight?: number | null
-          base_price: number
-          current_price: number
+          weight: number
           image_url?: string | null
-          is_active?: boolean
+          stock: number
           organization_id: string
         }
         Update: {
@@ -73,19 +89,14 @@ export interface Database {
           brand?: string
           category?: string
           subcategory?: string | null
+          price?: number
+          cost?: number
           width?: number
           height?: number
           depth?: number
-          weight?: number | null
-          case_pack?: number
-          case_width?: number | null
-          case_height?: number | null
-          case_depth?: number | null
-          case_weight?: number | null
-          base_price?: number
-          current_price?: number
+          weight?: number
           image_url?: string | null
-          is_active?: boolean
+          stock?: number
           organization_id?: string
         }
       }
@@ -101,7 +112,7 @@ export interface Database {
           depth: number
           fixture_type: string
           layout_data: Json
-          status: 'draft' | 'active' | 'archived'
+          status: string
           organization_id: string
           created_by: string
           updated_by: string
@@ -117,7 +128,7 @@ export interface Database {
           depth: number
           fixture_type: string
           layout_data: Json
-          status?: 'draft' | 'active' | 'archived'
+          status?: string
           organization_id: string
           created_by: string
           updated_by: string
@@ -133,80 +144,10 @@ export interface Database {
           depth?: number
           fixture_type?: string
           layout_data?: Json
-          status?: 'draft' | 'active' | 'archived'
+          status?: string
           organization_id?: string
           created_by?: string
           updated_by?: string
-        }
-      }
-      organizations: {
-        Row: {
-          id: string
-          created_at: string
-          name: string
-          subscription_status: 'active' | 'inactive' | 'trial'
-          trial_ends_at: string | null
-          settings: Json
-        }
-        Insert: {
-          id?: string
-          created_at?: string
-          name: string
-          subscription_status?: 'active' | 'inactive' | 'trial'
-          trial_ends_at?: string | null
-          settings?: Json
-        }
-        Update: {
-          id?: string
-          created_at?: string
-          name?: string
-          subscription_status?: 'active' | 'inactive' | 'trial'
-          trial_ends_at?: string | null
-          settings?: Json
-        }
-      }
-      pricing_rules: {
-        Row: {
-          id: string
-          created_at: string
-          updated_at: string
-          product_id: string
-          rule_type: 'markdown' | 'markup' | 'fixed' | 'promotional'
-          value: number
-          start_date: string | null
-          end_date: string | null
-          priority: number
-          conditions: Json | null
-          organization_id: string
-          created_by: string
-        }
-        Insert: {
-          id?: string
-          created_at?: string
-          updated_at?: string
-          product_id: string
-          rule_type: 'markdown' | 'markup' | 'fixed' | 'promotional'
-          value: number
-          start_date?: string | null
-          end_date?: string | null
-          priority?: number
-          conditions?: Json | null
-          organization_id: string
-          created_by: string
-        }
-        Update: {
-          id?: string
-          created_at?: string
-          updated_at?: string
-          product_id?: string
-          rule_type?: 'markdown' | 'markup' | 'fixed' | 'promotional'
-          value?: number
-          start_date?: string | null
-          end_date?: string | null
-          priority?: number
-          conditions?: Json | null
-          organization_id?: string
-          created_by?: string
         }
       }
       user_profiles: {

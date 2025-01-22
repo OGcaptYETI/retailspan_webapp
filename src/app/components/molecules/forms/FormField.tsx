@@ -2,7 +2,6 @@
 import * as React from "react"
 import { Label } from "@/app/components/atoms/typography"
 import { Input, type InputProps } from "@/app/components/atoms/inputs"
-import { cn } from "@/lib/utils/cn"
 
 export interface FormFieldProps extends InputProps {
   label: string
@@ -25,7 +24,8 @@ const FormField = React.forwardRef<HTMLInputElement, FormFieldProps>(
     labelProps,
     ...props 
   }, ref) => {
-    const inputId = id || React.useId()
+    const generatedId = React.useId()
+    const inputId = id || generatedId
     const errorId = `${inputId}-error`
     const helperId = `${inputId}-helper`
 

@@ -1,12 +1,14 @@
-// File: src/app/components/templates/pages/RegisterPage.tsx
+"use client"
+
 import * as React from "react"
-import { createClientComponentClient } from "@supabase/auth-helpers-nextjs"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { Heading, Text } from "@/app/components/atoms/typography"
 import { Button } from "@/app/components/atoms/buttons"
 import { FormField } from "@/app/components/molecules/forms"
 import { cn } from "@/lib/utils/cn"
+import { toast } from "sonner"
+import { createClientSupabaseClient } from "@/lib/supabase/client"
 
 export interface RegisterPageProps {
   className?: string
@@ -16,7 +18,38 @@ export function RegisterPage({ className }: RegisterPageProps) {
   const [isLoading, setIsLoading] = React.useState(false)
   const [error, setError] = React.useState<string | null>(null)
   const router = useRouter()
-  const supabase = createClientComponentClient()
+  const supabase = createClientSupabaseClient()
+
+  // Password requirements
+  const passwordRequirements = {
+    minLength: 8,
+    hasUpperCase: /[A-Z]/,
+    hasLowerCase: /[a-z]/,
+    hasNumber: /\d/,
+    hasSpecialChar: /[!@#$%^&*(),.?":{}|<>]/
+  }
+
+  const validatePassword = (password: string): string[] => {
+    const errors: string[] = []
+    
+    if (password.length < passwordRequirements.minLength) {
+      errors.push(`Password must be at least ${passwordRequirements.minLength} characters long`)
+    }
+    if (!passwordRequirements.hasUpperCase.test(password)) {
+      errors.push("Password must contain at least one uppercase letter")
+    }
+    if (!passwordRequirements.hasLowerCase.test(password)) {
+      errors.push("Password must contain at least one lowercase letter")
+    }
+    if (!passwordRequirements.hasNumber.test(password)) {
+      errors.push("Password must contain at least one number")
+    }
+    if (!passwordRequirements.hasSpecialChar.test(password)) {
+      errors.push("Password must contain at least one special character")
+    }
+    
+    return errors
+  }
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
@@ -28,14 +61,23 @@ export function RegisterPage({ className }: RegisterPageProps) {
     const password = formData.get("password") as string
     const confirmPassword = formData.get("confirmPassword") as string
 
+    // Validate password requirements
+    const passwordErrors = validatePassword(password)
+    if (passwordErrors.length > 0) {
+      setError(passwordErrors[0])
+      setIsLoading(false)
+      return
+    }
+
     if (password !== confirmPassword) {
       setError("Passwords do not match")
+      toast.error("Passwords do not match")
       setIsLoading(false)
       return
     }
 
     try {
-      const { error } = await supabase.auth.signUp({
+      const { error: signUpError } = await supabase.auth.signUp({
         email,
         password,
         options: {
@@ -43,16 +85,37 @@ export function RegisterPage({ className }: RegisterPageProps) {
         },
       })
 
-      if (error) {
-        throw error
+      if (signUpError) {
+        throw signUpError
       }
 
+      toast.success("Account created successfully! Please check your email to verify your account.")
       router.push('/auth/verify-email')
     } catch (error: any) {
       setError(error.message)
+      toast.error(error.message)
     } finally {
       setIsLoading(false)
     }
+  }
+
+  const getPasswordStrength = (password: string): number => {
+    if (!password) return 0
+    const errors = validatePassword(password)
+    return Math.max(0, 100 - (errors.length * 20)) // 20% per requirement
+  }
+
+  const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const password = e.target.value
+    const strength = getPasswordStrength(password)
+    
+    // Update password strength indicator visually
+    const strengthClass = 
+      strength >= 80 ? "bg-success" :
+      strength >= 60 ? "bg-warning" :
+      "bg-destructive"
+
+    // You can add visual feedback here if needed
   }
 
   return (
@@ -81,8 +144,9 @@ export function RegisterPage({ className }: RegisterPageProps) {
           name="password"
           required
           autoComplete="new-password"
-          helperText="Must be at least 8 characters"
+          helperText="Must be at least 8 characters with uppercase, lowercase, number, and special character"
           minLength={8}
+          onChange={handlePasswordChange}
         />
 
         <FormField

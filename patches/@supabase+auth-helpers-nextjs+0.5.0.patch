@@ -1,0 +1,23 @@
+diff --git a/node_modules/@supabase/auth-helpers-nextjs/tsconfig.json b/node_modules/@supabase/auth-helpers-nextjs/tsconfig.json
+index 77207ef..1ffc955 100644
+--- a/node_modules/@supabase/auth-helpers-nextjs/tsconfig.json
++++ b/node_modules/@supabase/auth-helpers-nextjs/tsconfig.json
+@@ -1,9 +1,9 @@
+ {
+-  "extends": "tsconfig/base.json",
+-  "compilerOptions": {
+-    "incremental": false,
+-    "importHelpers": true
+-  },
+-  "include": ["src", "src/middleware"],
+-  "exclude": ["node_modules"]
+-}
++	"compilerOptions": {
++	  "incremental": false,
++	  "importHelpers": true
++	},
++	"include": ["src"],
++	"exclude": ["node_modules"]
++  }
++  
+\ No newline at end of file

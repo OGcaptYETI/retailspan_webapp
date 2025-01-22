@@ -8,6 +8,9 @@ export interface SearchFieldProps extends SearchInputProps {
   label?: string
   hideLabel?: boolean
   labelProps?: React.LabelHTMLAttributes<HTMLLabelElement>
+  className?: string
+  id?: string
+  onSearch?: (value: string) => void
 }
 
 const SearchField = React.forwardRef<HTMLInputElement, SearchFieldProps>(
@@ -17,9 +20,11 @@ const SearchField = React.forwardRef<HTMLInputElement, SearchFieldProps>(
     className,
     id,
     labelProps,
+    onSearch = () => {},
     ...props 
   }, ref) => {
-    const inputId = id || React.useId()
+    const generatedId = React.useId()
+    const inputId = id || generatedId
     
     return (
       <div className="space-y-2">
@@ -35,7 +40,7 @@ const SearchField = React.forwardRef<HTMLInputElement, SearchFieldProps>(
           id={inputId}
           ref={ref}
           type="search"
-          placeholder={props.placeholder || `Search ${label.toLowerCase()}...`}
+          onSearch={onSearch}
           className={cn(
             "w-full md:w-[300px]",
             className

@@ -9,7 +9,6 @@
     "noEmit": true,
     "esModuleInterop": true,
     "module": "esnext",
-    // "moduleResolution": "node" is also valid; "bundler" is a newer option in TS 5.x & Next 13+
     "moduleResolution": "bundler",
     "resolveJsonModule": true,
     "isolatedModules": true,
@@ -20,9 +19,7 @@
         "name": "next"
       }
     ],
-    // Sets the base directory for non-relative imports
     "baseUrl": ".",
-    // You can now import anything inside `src/` with `@/...`
     "paths": {
       "@/*": ["src/*"]
     }

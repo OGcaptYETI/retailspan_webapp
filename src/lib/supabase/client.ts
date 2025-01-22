@@ -1,22 +1,37 @@
-import { createClient } from '@supabase/supabase-js'
-import { type Database } from '../../types/supabase'
-import { createServerComponentClient, createClientComponentClient } from '@supabase/auth-helpers-nextjs'
-import { cookies } from 'next/headers'
+'use client';
 
-// Create a Supabase client for server components
-export const createServerSupabaseClient = () => {
-  return createServerComponentClient<Database>({
-    cookies,
-  })
-}
+// src/lib/supabase/client.ts
+import { createBrowserClient } from '@supabase/ssr';
+import { createClient } from '@supabase/supabase-js';
+import type { Database } from '@/types/supabase';
+import { supabaseConfig } from './config';
 
-// Create a Supabase client for client components
-export const createClientSupabaseClient = () => {
-  return createClientComponentClient<Database>()
-}
-
-// Create a standard Supabase client (for direct API usage)
+// Direct Supabase client
 export const supabase = createClient<Database>(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-)
+  supabaseConfig.supabaseUrl, 
+  supabaseConfig.supabaseKey
+);
+
+// Browser client
+export const createClientSupabaseClient = () => {
+  return createBrowserClient<Database>(
+    supabaseConfig.supabaseUrl,
+    supabaseConfig.supabaseKey
+  );
+};
+
+// API client
+export const createApiClient = () => {
+  return createClient<Database>(
+    supabaseConfig.supabaseUrl, 
+    supabaseConfig.supabaseKey, 
+    {
+      auth: {
+        persistSession: false,
+        autoRefreshToken: false,
+      },
+    }
+  );
+};
+
+export default createClientSupabaseClient();

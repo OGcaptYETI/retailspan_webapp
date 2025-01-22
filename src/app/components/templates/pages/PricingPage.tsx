@@ -1,133 +1,178 @@
-// File: src/app/components/templates/pages/PricingPage.tsx
-import * as React from "react"
-import { 
-  PageTemplate, 
-  type PageTemplateProps 
-} from "./PageTemplate"
-import { SearchField } from "@/app/components/molecules/forms"
-import { Button } from "@/app/components/atoms/buttons"
-import { Text } from "@/app/components/atoms/typography"
-import { Card, CardContent } from "@/app/components/molecules/cards"
-import type { Product } from "@/types/supabase"
-import { cn } from "@/lib/utils/cn"
+// app/components/templates/pages/PricingPage.tsx
+"use client";
 
-export interface PricingPageProps extends Omit<PageTemplateProps, 'children'> {
-  products: Product[]
-  onUpdatePrices?: (updatedProducts: Product[]) => Promise<void>
-  className?: string
-}
+import { useState, useEffect } from 'react';
+import { useToast } from "@/app/components/ui/use-toast";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/app/components/ui/tabs";
+import { Settings2, Calculator, Table } from 'lucide-react';
+import { useUser } from '@/lib/auth/utils';
+import { supabase } from '@/lib/supabase/client';
 
-export function PricingPage({
-  products,
-  onUpdatePrices,
-  className,
-  ...pageProps
-}: PricingPageProps) {
-  const [searchTerm, setSearchTerm] = React.useState("")
-  const [selectedProducts, setSelectedProducts] = React.useState<Product[]>([])
-  const [isUpdating, setIsUpdating] = React.useState(false)
+// Import our pricing components
+import { PricingCalculator } from '@/app/components/organisms/pricing/PricingCalculator';
+import { MarginAnalysis } from '@/app/components/organisms/pricing/MarginAnalysis';
+import { StateSelector } from '@/app/components/organisms/pricing/StateSelector';
+import { ProgramEnrollment } from '@/app/components/organisms/pricing/ProgramEnrollment';
+import { DataUploader } from '@/app/components/organisms/pricing/setup/DataUploader';
+import { BrandComparison } from '@/app/components/organisms/pricing/setup/BrandComparision';
+import { PricingRules } from '@/app/components/organisms/pricing/setup/PricingRules';
 
-  // Filter products based on search
-  const filteredProducts = React.useMemo(() => {
-    if (!searchTerm) return products
-    const lowerSearch = searchTerm.toLowerCase()
-    return products.filter(product => 
-      product.name.toLowerCase().includes(lowerSearch) ||
-      product.brand.toLowerCase().includes(lowerSearch) ||
-      product.category.toLowerCase().includes(lowerSearch)
-    )
-  }, [products, searchTerm])
+const AdminView = () => {
+  const { toast } = useToast();
 
-  // Bulk price update handler
-  const handleBulkUpdate = async () => {
-    if (!selectedProducts.length || !onUpdatePrices) return
-    
-    setIsUpdating(true)
+  const handleUploadComplete = async (data: any[], type: string) => {
     try {
-      await onUpdatePrices(selectedProducts)
+      const { error } = await supabase.from(type).insert(data);
+      if (error) throw error;
+      
+      toast({
+        title: "Upload Successful",
+        description: `Successfully uploaded ${data.length} ${type} records`
+      });
     } catch (error) {
-      console.error('Failed to update prices:', error)
-    } finally {
-      setIsUpdating(false)
-      setSelectedProducts([])
+      toast({
+        title: "Upload Failed",
+        description: error.message,
+        variant: "destructive"
+      });
     }
-  }
+  };
 
   return (
-    <PageTemplate
-      {...pageProps}
-      actions={
-        <Button
-          variant="default"
-          onClick={handleBulkUpdate}
-          disabled={!selectedProducts.length || isUpdating}
-        >
-          {isUpdating 
-            ? "Updating..." 
-            : `Update ${selectedProducts.length} Products`}
-        </Button>
-      }
-    >
-      <div className={cn("space-y-6", className)}>
-        {/* Search and Filters */}
-        <div className="flex items-center justify-between">
-          <SearchField
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            onClear={() => setSearchTerm("")}
-            placeholder="Search products..."
-          />
-          <Text className="text-muted-foreground">
-            {filteredProducts.length} products
-          </Text>
-        </div>
+    <Tabs defaultValue="setup" className="space-y-6">
+      <TabsList>
+        <TabsTrigger value="setup">
+          <Settings2 className="w-4 h-4 mr-2" />
+          Price Setup
+        </TabsTrigger>
+        <TabsTrigger value="brands">
+          <Table className="w-4 h-4 mr-2" />
+          Brand Comparison
+        </TabsTrigger>
+        <TabsTrigger value="rules">
+          <Calculator className="w-4 h-4 mr-2" />
+          Pricing Rules
+        </TabsTrigger>
+      </TabsList>
 
-        {/* Product Grid */}
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {filteredProducts.map(product => (
-            <Card key={product.id}>
-              <CardContent className="p-4">
-                <div className="flex items-start justify-between">
-                  <div className="space-y-1">
-                    <Text className="font-medium">{product.name}</Text>
-                    <Text className="text-sm text-muted-foreground">
-                      {product.brand} • {product.category}
-                    </Text>
-                  </div>
-                  <Text className="text-lg font-bold">
-                    ${product.price.toFixed(2)}
-                  </Text>
-                </div>
+      <TabsContent value="setup" className="space-y-4">
+        <DataUploader
+          templateType="manufacturer_pricing"
+          onUploadComplete={(data) => handleUploadComplete(data, 'manufacturer_pricing')}
+        />
+        <DataUploader
+          templateType="state_pricing"
+          onUploadComplete={(data) => handleUploadComplete(data, 'state_pricing')}
+        />
+        <DataUploader
+          templateType="promotions"
+          onUploadComplete={(data) => handleUploadComplete(data, 'promotions')}
+        />
+      </TabsContent>
 
-                <div className="mt-4 space-x-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      const isSelected = selectedProducts.some(p => p.id === product.id)
-                      if (isSelected) {
-                        setSelectedProducts(prev => prev.filter(p => p.id !== product.id))
-                      } else {
-                        setSelectedProducts(prev => [...prev, product])
-                      }
-                    }}
-                  >
-                    {selectedProducts.some(p => p.id === product.id)
-                      ? "Selected"
-                      : "Select"}
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                  >
-                    View History
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+      <TabsContent value="brands">
+        <BrandComparison />
+      </TabsContent>
+
+      <TabsContent value="rules">
+        <PricingRules />
+      </TabsContent>
+    </Tabs>
+  );
+};
+
+const UserView = () => {
+  const { toast } = useToast();
+  const [selectedState, setSelectedState] = useState('');
+  const [pricingData, setPricingData] = useState({});
+  const [products, setProducts] = useState([]);
+  const [comparableProducts, setComparableProducts] = useState({});
+
+  useEffect(() => {
+    if (selectedState) {
+      loadPricingData();
+    }
+  }, [selectedState]);
+
+  const loadPricingData = async () => {
+    try {
+      // Load products, pricing, and comparable products
+      const [productsRes, pricingRes] = await Promise.all([
+        supabase.from('products').select('*'),
+        supabase.from('calculated_prices')
+          .select('*')
+          .eq('state_code', selectedState)
+      ]);
+
+      if (productsRes.error) throw productsRes.error;
+      if (pricingRes.error) throw pricingRes.error;
+
+      setProducts(productsRes.data);
+      // Transform pricing data into required format
+      const pricingMap = pricingRes.data.reduce((acc, curr) => {
+        acc[curr.product_id] = curr;
+        return acc;
+      }, {});
+      setPricingData(pricingMap);
+
+    } catch (error) {
+      toast({
+        title: "Error Loading Data",
+        description: error.message,
+        variant: "destructive"
+      });
+    }
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="grid grid-cols-2 gap-4">
+        <StateSelector
+          value={selectedState}
+          onChange={setSelectedState}
+        />
+        <ProgramEnrollment />
       </div>
-    </PageTemplate>
-  )
-}
+
+      <Tabs defaultValue="calculator">
+        <TabsList>
+          <TabsTrigger value="calculator">
+            <Calculator className="w-4 h-4 mr-2" />
+            Calculator
+          </TabsTrigger>
+          <TabsTrigger value="analysis">
+            <Table className="w-4 h-4 mr-2" />
+            Analysis
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="calculator">
+          <PricingCalculator
+            selectedState={selectedState}
+          />
+        </TabsContent>
+
+        <TabsContent value="analysis">
+          <MarginAnalysis
+            products={products}
+            pricingData={pricingData}
+            comparableProducts={comparableProducts}
+          />
+        </TabsContent>
+      </Tabs>
+    </div>
+  );
+};
+
+export const PricingPage = () => {
+  const { user, isAdmin } = useUser();
+
+  return (
+    <div className="container mx-auto py-6">
+      <h1 className="text-2xl font-bold mb-6">
+        {isAdmin ? 'Pricing Administration' : 'Pricing Management'}
+      </h1>
+      {isAdmin ? <AdminView /> : <UserView />}
+    </div>
+  );
+};
