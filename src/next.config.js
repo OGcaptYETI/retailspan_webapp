@@ -1,9 +1,11 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
-
+  
+  transpilePackages: ['react-konva', 'konva'],
+  
   webpack: (config, { isServer }) => {
-    // Prevent canvas from being bundled on the client
+    // Your existing webpack config remains the same
     if (!isServer) {
       config.resolve.fallback = {
         ...config.resolve.fallback,
@@ -11,24 +13,31 @@ const nextConfig = {
       }
     }
 
-    // Add canvas to externals on server
     if (isServer) {
       config.externals = [
-        ...(config.externals || []),
-        'canvas'
+        ...config.externals,
+        {
+          canvas: 'commonjs canvas',
+          konva: 'commonjs konva'
+        }
       ]
     }
 
-    // Configure konva alias
-    config.resolve.alias = {
-      ...(config.resolve.alias || {}),
-      konva: 'konva/lib/konva.js'
+    config.module = {
+      ...config.module,
+      rules: [
+        ...config.module.rules,
+        {
+          test: /\.node$/,
+          use: 'node-loader',
+          exclude: /node_modules/,
+        }
+      ]
     }
 
     return config
   },
 
-  // Retain existing image domains config
   images: {
     domains: [process.env.NEXT_PUBLIC_SUPABASE_URL?.replace('https://', '') || '']
   }

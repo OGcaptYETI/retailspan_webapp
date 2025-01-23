@@ -6,8 +6,14 @@ import { createClientSupabaseClient } from "@/lib/supabase/client";
 import { FormField } from "@/app/components/molecules/forms/FormField";
 import { Button } from "@/app/components/atoms/buttons/Button";
 import { toast } from "sonner";
+import { type FC } from 'react';
+import type { User } from '@supabase/supabase-js';
 
-const SetupProfileForm = () => {
+interface SetupProfileFormProps {
+  user: User;
+}
+
+  const SetupProfileForm: FC<SetupProfileFormProps> = ({ user }) => {
   const router = useRouter();
   const supabase = createClientSupabaseClient(); // Use the client function
   const [isLoading, setIsLoading] = useState(false);

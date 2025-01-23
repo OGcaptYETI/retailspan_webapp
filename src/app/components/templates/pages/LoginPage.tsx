@@ -1,6 +1,5 @@
 'use client';
 
-// src/app/components/templates/pages/LoginPage.tsx
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -10,7 +9,11 @@ import { Input } from '@/app/components/atoms/inputs';
 import { Heading, Text } from '@/app/components/atoms/typography';
 import { toast } from 'sonner';
 
-export function LoginPage() {
+interface LoginPageProps {
+  error?: string;
+}
+
+export function LoginPage({ error }: LoginPageProps) {
   console.log('Login Page Template - Rendering');
   
   const [email, setEmail] = useState('');
@@ -24,12 +27,12 @@ export function LoginPage() {
     setIsLoading(true);
 
     try {
-      const { error } = await supabase.auth.signInWithPassword({
+      const { error: signInError } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
 
-      if (error) throw error;
+      if (signInError) throw signInError;
 
       toast.success('Successfully logged in');
       router.refresh();
@@ -49,49 +52,43 @@ export function LoginPage() {
         <Text className="text-muted-foreground">
           Enter your credentials to access your account
         </Text>
+        {error && (
+          <Text className="text-destructive font-medium">
+            {error}
+          </Text>
+        )}
       </div>
 
       <form onSubmit={onSubmit} className="space-y-4">
         <div className="space-y-2">
-          <label htmlFor="email">Email</label>
           <Input
-            id="email"
             type="email"
-            placeholder="you@example.com"
+            placeholder="Email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
-            disabled={isLoading}
           />
-        </div>
-        <div className="space-y-2">
-          <label htmlFor="password">Password</label>
           <Input
-            id="password"
             type="password"
+            placeholder="Password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
-            disabled={isLoading}
           />
         </div>
 
-        <Button 
-          type="submit" 
-          className="w-full"
-          disabled={isLoading}
-        >
+        <Button type="submit" className="w-full" disabled={isLoading}>
           {isLoading ? 'Signing in...' : 'Sign In'}
         </Button>
       </form>
 
-      <div className="text-center space-y-2">
-        <Link 
-          href="/auth/register"
-          className="text-sm hover:underline"
-        >
-          Don&apos;t have an account? Sign up
-        </Link>
+      <div className="text-center">
+        <Text className="text-sm text-muted-foreground">
+          Don't have an account?{' '}
+          <Link href="/auth/register" className="text-primary hover:underline">
+            Sign up
+          </Link>
+        </Text>
       </div>
     </div>
   );

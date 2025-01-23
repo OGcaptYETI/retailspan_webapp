@@ -12,9 +12,11 @@ export interface BaseProduct {
   subcategory: string | null;
   price: number;
   cost: number;
-  width: number;
-  height: number;
-  depth: number;
+  dimensions: {
+    width: number;   // Width in inches
+    height: number;  // Height in inches
+    depth: number;   // Depth in inches
+  };
   weight: number | null;
   image_url: string | null;
   stock: number;
@@ -62,3 +64,12 @@ export type ProductGridItem = BaseProduct & {
 export type Product = BaseProduct;
 
 export type ProductUpdate = Partial<Product>;
+
+export type comparableProducts = BaseProduct;
+export interface ComparableProduct {
+  productId: string;
+  price: number;
+  retailer: string;
+  url: string;
+}
+

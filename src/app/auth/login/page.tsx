@@ -8,11 +8,22 @@ export default async function Page() {
   
   const supabase = createServerSupabaseClient();
   
-  const { data: { session } } = await supabase.auth.getSession();
+  try {
+    const { data: { session }, error } = await supabase.auth.getSession();
 
-  if (session) {
-    redirect('/dashboard');
+    if (error) {
+      console.error('Auth error:', error.message);
+      // Handle error appropriately
+      return <LoginPage error={error.message} />;
+    }
+
+    if (session) {
+      redirect('/dashboard');
+    }
+
+    return <LoginPage />;
+  } catch (error) {
+    console.error('Unexpected error:', error);
+    return <LoginPage error="An unexpected error occurred" />;
   }
-
-  return <LoginPage />;
 }

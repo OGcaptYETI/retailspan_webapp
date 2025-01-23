@@ -1,4 +1,5 @@
 // src/app/layout.tsx
+
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
@@ -6,7 +7,8 @@ import { Toaster as ShadcnToaster } from "./components/ui/toaster";
 import { Toaster as SonnerToaster } from "sonner";
 import { ThemeProvider } from "./components/theme-provider";
 import AuthProvider from "./providers";
-import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { createServerComponentClient } from "@supabase/auth-helpers-nextjs";
+import { cookies } from "next/headers";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -20,11 +22,17 @@ export default async function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const supabase = createServerSupabaseClient();
+  const supabase = createServerComponentClient({ cookies });
 
+  // Fix: Fetch session securely
   const {
     data: { session },
+    error,
   } = await supabase.auth.getSession();
+
+  if (error) {
+    console.error("Supabase session fetch error:", error.message);
+  }
 
   return (
     <html lang="en" suppressHydrationWarning>

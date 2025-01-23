@@ -1,27 +1,32 @@
-// src/lib/supabase/server.ts
-import { createServerClient } from '@supabase/ssr';
-import { cookies } from 'next/headers';
-import { Database } from '@/types/supabase';
-import { supabaseConfig } from './config';
+import { createServerClient } from '@supabase/ssr'
+import { cookies } from 'next/headers'
+import { supabaseConfig } from './config'
 
-export const createServerSupabaseClient = () => {
-  const cookieStore = cookies();
-  
-  return createServerClient<Database>(
+export async function createServerSupabaseClient() {
+  const cookieStore = cookies()
+
+  return createServerClient(
     supabaseConfig.supabaseUrl,
     supabaseConfig.supabaseKey,
     {
       cookies: {
-        get(name: string) {
-          return cookieStore.get(name)?.value;
+        async getAll() {
+          const store = await cookieStore;
+          return store.getAll().map(cookie => ({
+            name: cookie.name,
+            value: cookie.value,
+          }))
         },
-        set(name: string, value: string, options: any) {
-          cookieStore.set(name, value, options);
-        },
-        remove(name: string, options: any) {
-          cookieStore.set(name, '', { ...options, maxAge: 0 });
+        async setAll(cookieStrings: Array<{ name: string; value: string; options?: any }>) {
+          cookieStrings.forEach(async ({ name, value, options }) => {
+            try {
+              (await cookieStore).set(name, value, options)
+            } catch (error) {
+              console.error(`Error setting cookie ${name}:`, error)
+            }
+          })
         },
       },
     }
-  );
-};
+  )
+}

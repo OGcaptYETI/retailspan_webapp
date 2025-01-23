@@ -11,30 +11,36 @@ import {
 } from '@/app/components/ui/table';
 import { TrendingUp, TrendingDown, Minus, ArrowUpDown } from 'lucide-react';
 
-interface Product {
-  id: bigint;
+export interface Product {
+  id: string;
   name: string;
   sku: string;
-  manufacturer_id: string;
+  manufacturerId: string;
   category: string;
+  price: number;
+  // ... other product properties
 }
 
-interface PricingData {
+export interface PricingData {
   wholesale_cost: number;
   retail_price: number;
   competitor_price?: number;
   margin_percent: number;
   markup_percent: number;
   penny_profit: number;
+  id: string;
+  product_id: string;
+  pricingData: any;
+  comparableProducts: ComparableProduct[];
 }
 
-interface ComparableProduct {
+export interface ComparableProduct {
   id: bigint;
   name: string;
   retail_price: number;
 }
 
-interface MarginAnalysisProps {
+export interface MarginAnalysisProps {
   products: Product[];
   pricingData: Record<string, PricingData>;
   comparableProducts: Record<string, ComparableProduct[]>;

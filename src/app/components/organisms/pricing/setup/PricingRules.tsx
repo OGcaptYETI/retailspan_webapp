@@ -1,4 +1,3 @@
-// app/components/organisms/pricing/setup/PricingRules.tsx
 "use client"
 
 import React, { useState, useEffect } from 'react'
@@ -9,87 +8,113 @@ import { Input } from '@/app/components/atoms/inputs'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/app/components/ui/select'
 import { toast } from 'sonner'
 import { Plus, Trash2, Edit2 } from 'lucide-react'
+import { useUser } from '@/lib/auth/utils'
 
-interface PricingRule {
-  id: string
-  name: string
-  type: 'markup' | 'markdown' | 'fixed'
-  value: number
-  startDate: string
-  endDate?: string
-  productIds: string[]
-  active: boolean
+export interface PricingRule {
+  id?: string;
+  organizationId: string;
+  name?: string;
+  description?: string;
+  type: 'markup' | 'discount' | 'fixed';
+  value: number;
+  conditions?: Record<string, any>;
+  startDate?: string;
+  endDate?: string;
+  created_at?: string;
+  updated_at?: string;
 }
 
 interface PricingRulesProps {
-  organizationId: string
+  organizationId?: string // Make optional since we'll get from user context if not provided
 }
 
 export function PricingRules({ organizationId }: PricingRulesProps) {
+  const { user } = useUser()
   const [rules, setRules] = useState<PricingRule[]>([])
   const [currentRule, setCurrentRule] = useState<Partial<PricingRule>>({})
   const [isEditing, setIsEditing] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const supabase = createClientSupabaseClient()
 
+  // Use provided organizationId or fall back to user's organization
+  const effectiveOrgId = organizationId || user?.organizationId
+
   useEffect(() => {
-    fetchRules()
-  }, [])
+    if (effectiveOrgId) {
+      fetchRules()
+    }
+  }, [effectiveOrgId])
 
   const fetchRules = async () => {
+    if (!effectiveOrgId) {
+      toast.error("No organization ID available")
+      return
+    }
+
     try {
       setIsLoading(true)
       const { data, error } = await supabase
         .from('pricing_rules')
         .select('*')
-        .eq('organization_id', organizationId)
+        .eq('organization_id', effectiveOrgId)
         .order('created_at', { ascending: false })
 
       if (error) throw error
       setRules(data || [])
     } catch (error) {
+      console.error('Error fetching rules:', error)
       toast.error('Failed to fetch pricing rules')
-      console.error(error)
     } finally {
       setIsLoading(false)
     }
   }
-
   const handleSaveRule = async () => {
+    if (!effectiveOrgId) {
+      toast.error("No organization ID available");
+      return;
+    }
+  
     try {
-      setIsLoading(true)
-      const ruleData = {
-        ...currentRule,
-        organization_id: organizationId,
-      }
-
+      setIsLoading(true);
       const { data, error } = await supabase
         .from('pricing_rules')
-        .upsert(ruleData)
-        .select()
-        .single()
-
-      if (error) throw error
-
+        .upsert({
+          ...currentRule,
+          organizationId: effectiveOrgId,
+          id: currentRule.id || undefined, // Use undefined instead of empty string
+        } satisfies Partial<PricingRule>)
+        .select(); // Add select() to get the returned data
+  
+      if (error) throw error;
+  
+      // Type assertion for data
+      const typedData = data as PricingRule[];
+  
       setRules(prev => {
-        const index = prev.findIndex(r => r.id === data.id)
-        if (index >= 0) {
-          return [...prev.slice(0, index), data, ...prev.slice(index + 1)]
+        if (typedData && typedData.length > 0) {
+          const newRule = typedData[0];
+          const existingRuleIndex = prev.findIndex(r => r.id === newRule.id);
+          
+          if (existingRuleIndex > -1) {
+            return prev.map((rule, index) => 
+              index === existingRuleIndex ? newRule : rule
+            );
+          }
+          return [newRule, ...prev];
         }
-        return [...prev, data]
-      })
-
-      setCurrentRule({})
-      setIsEditing(false)
-      toast.success('Rule saved successfully')
+        return prev;
+      });
+  
+      toast.success('Rule saved successfully');
+      setCurrentRule({});
+      setIsEditing(false);
     } catch (error) {
-      toast.error('Failed to save rule')
-      console.error(error)
+      toast.error('Failed to save rule');
+      console.error(error);
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
-
+  };
   const handleDeleteRule = async (ruleId: string) => {
     try {
       setIsLoading(true)
@@ -211,7 +236,7 @@ export function PricingRules({ organizationId }: PricingRulesProps) {
                 <Button
                   variant="destructive"
                   size="sm"
-                  onClick={() => handleDeleteRule(rule.id)}
+                  onClick={() => rule.id && handleDeleteRule(rule.id)}
                   disabled={isLoading}
                 >
                   <Trash2 className="h-4 w-4" />

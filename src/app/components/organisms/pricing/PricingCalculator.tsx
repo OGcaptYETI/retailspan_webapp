@@ -22,6 +22,7 @@ interface PricingCalculatorProps {
   organizationId: string
   manufacturerId: string
   stateCode: string
+  selectedState: string;
 }
 
 export function PricingCalculator({

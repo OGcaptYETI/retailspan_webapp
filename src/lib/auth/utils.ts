@@ -1,8 +1,10 @@
 // lib/auth/utils.ts
+"use client";
 
 import { useEffect, useState } from 'react';
-import { User, Session } from '@supabase/supabase-js';
+import { User as BaseUser, Session } from '@supabase/supabase-js';
 import { supabase } from '../supabase/client';
+
 
 interface UserProfile {
   id: string;
@@ -30,20 +32,29 @@ export function useUser(): UseUserReturn {
   const [error, setError] = useState<Error | null>(null);
 
   useEffect(() => {
-    // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-    });
+    // Get authenticated user securely
+    async function loadUser() {
+      try {
+        const { data, error } = await supabase.auth.getUser();
+        if (error) throw error;
+        setUser(data?.user ?? null);
+        setSession(await supabase.auth.getSession().then(({ data }) => data.session));
+      } catch (err) {
+        console.error('Error fetching user:', err);
+        setError(err instanceof Error ? err : new Error('Failed to fetch user'));
+      }
+    }
+
+    loadUser();
 
     // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: subscription } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
       setUser(session?.user ?? null);
     });
 
     return () => {
-      subscription.unsubscribe();
+      subscription?.subscription?.unsubscribe();
     };
   }, []);
 
@@ -85,25 +96,30 @@ export function useUser(): UseUserReturn {
     profile,
     isAdmin,
     isLoading,
-    error
+    error,
   };
 }
 
 // Re-export existing auth utilities
 export async function getSession() {
-  const { data: { session } } = await supabase.auth.getSession();
-  return session;
+  const { data, error } = await supabase.auth.getSession();
+  if (error) throw error;
+  return data.session;
 }
 
 export async function requireAuth() {
-  const session = await getSession();
-  
-  if (!session) {
+  try {
+    const { data, error } = await supabase.auth.getUser();
+    if (error || !data?.user) {
+      window.location.href = '/auth/login';
+      return null;
+    }
+    return data.user;
+  } catch (err) {
+    console.error('Error in requireAuth:', err);
     window.location.href = '/auth/login';
     return null;
   }
-  
-  return session;
 }
 
 export async function getUserProfile(userId: string) {
@@ -120,4 +136,8 @@ export async function getUserProfile(userId: string) {
     console.error('Profile error:', error);
     return null;
   }
+}
+export interface User extends BaseUser {
+  organizationId?: string;
+  profile?: UserProfile;
 }

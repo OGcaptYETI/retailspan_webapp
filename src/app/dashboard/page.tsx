@@ -1,10 +1,10 @@
-import { DashboardLayout } from "@/app/components/templates/layouts"
-import { Metadata } from "next"
+import { DashboardLayout } from "@/app/components/templates/layouts/DashboardLayout";
+import { Metadata } from "next";
 
 export const metadata: Metadata = {
   title: "Dashboard - RetailSpan",
   description: "RetailSpan Dashboard",
-}
+};
 
 export default function Page() {
   return (
@@ -14,5 +14,5 @@ export default function Page() {
         {/* Add dashboard content here */}
       </div>
     </DashboardLayout>
-  )
+  );
 }

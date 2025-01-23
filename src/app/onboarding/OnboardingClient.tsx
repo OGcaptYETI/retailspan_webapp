@@ -2,11 +2,16 @@
 "use client";
 
 import React from "react";
+import type { User } from '@supabase/supabase-js';
 import { Heading } from "@/app/components/atoms/typography/Heading";
 import { Text } from "@/app/components/atoms/typography/Text";
 import SetupProfileForm from "@/app/components/organisms/SetupProfile";
 
-export default function OnboardingClient() {
+interface OnboardingClientProps {
+  user: User;
+}
+
+export default function OnboardingClient({ user }: OnboardingClientProps) {
   return (
     <div className="container mx-auto px-4 py-8 max-w-2xl">
       <div className="text-center space-y-6">
@@ -14,9 +19,9 @@ export default function OnboardingClient() {
           Welcome to RetailSpan
         </Heading>
         <Text className="text-muted-foreground">
-          Let&apos;s get you started with setting up your account
+          Welcome, {user.email}! Let&apos;s get you started with setting up your account
         </Text>
-        <SetupProfileForm />
+        <SetupProfileForm user={user} />
       </div>
     </div>
   );
