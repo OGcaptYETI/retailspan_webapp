@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils/cn"
 export interface IconButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   icon: React.ReactNode
   label: string
-  variant?: 'default' | 'ghost' | 'outline'
+  variant?: 'primary' | 'ghost' | 'outline'
 }
 
 const IconButton = React.forwardRef<HTMLButtonElement, IconButtonProps>(

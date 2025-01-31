@@ -1,5 +1,6 @@
 // File: src/app/components/atoms/typography/Text.tsx
 import * as React from "react"
+import { JSX } from "react"
 import { cva, type VariantProps } from "class-variance-authority"
 import { cn } from "@/lib/utils/cn"
 

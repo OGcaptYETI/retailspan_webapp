@@ -1,19 +1,11 @@
 // File: src/app/components/templates/index.ts
+
 // Layouts
-export * from './layouts'
+export * from './layouts/AuthLayout'
 
 // Page Templates
-export * from './pages'
+export * from './DashboardLayout'
+export * from './Header'
 
-// Here's what's available:
-// Layouts:
-// - DashboardLayout
-// - AuthLayout
 
-// Pages:
-// - PageTemplate (base template)
-// - PlanogramPage
-// - PricingPage
-// - SettingsPage
-// - LoginPage
-// - RegisterPage
+

@@ -11,7 +11,7 @@ export interface SearchInputProps extends Omit<InputProps, 'type'> {
 const SearchInput = React.forwardRef<HTMLInputElement, SearchInputProps>(
   ({ className, onSearch, searchDelay = 300, ...props }, ref) => {
     const [debouncedValue, setDebouncedValue] = React.useState("")
-    const timeoutRef = React.useRef<NodeJS.Timeout>()
+    const timeoutRef = React.useRef<NodeJS.Timeout | null>(null)
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
       props.onChange?.(e)

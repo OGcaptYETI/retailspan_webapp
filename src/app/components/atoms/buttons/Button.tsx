@@ -3,9 +3,8 @@ import * as React from "react"
 import { cva, type VariantProps } from "class-variance-authority"
 import { cn } from "@/lib/utils/cn"
 
-// Define button variants using class-variance-authority
-const buttonVariants = cva(
-  "inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none",
+export const buttonVariants = cva(
+  "inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none",
   {
     variants: {
       variant: {
@@ -30,26 +29,49 @@ const buttonVariants = cva(
   }
 )
 
-// Define button props interface
 export interface ButtonProps
   extends React.ButtonHTMLAttributes<HTMLButtonElement>,
     VariantProps<typeof buttonVariants> {
-  asChild?: boolean
+  isLoading?: boolean
 }
 
-// Create Button component
 const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
-  ({ className, variant, size, ...props }, ref) => {
+  ({ className, variant, size, isLoading, children, ...props }, ref) => {
     return (
       <button
         className={cn(buttonVariants({ variant, size, className }))}
         ref={ref}
+        disabled={isLoading || props.disabled}
         {...props}
-      />
+      >
+        {isLoading && (
+          <svg
+            className="animate-spin h-5 w-5 mr-2 text-current"
+            xmlns="http://www.w3.org/2000/svg"
+            fill="none"
+            viewBox="0 0 24 24"
+          >
+            <circle
+              className="opacity-25"
+              cx="12"
+              cy="12"
+              r="10"
+              stroke="currentColor"
+              strokeWidth="4"
+            ></circle>
+            <path
+              className="opacity-75"
+              fill="currentColor"
+              d="M4 12a8 8 0 018-8V0C6.268 0 0 6.268 0 12h4zm2 5.291l2.59-2.59L4 8l-.002 5.291z"
+            ></path>
+          </svg>
+        )}
+        {children}
+      </button>
     )
   }
 )
+
 Button.displayName = "Button"
 
-// Export button and its variants
-export { Button, buttonVariants }
+export { Button }

@@ -10,6 +10,7 @@ const labelVariants = cva(
       variant: {
         default: "",
         error: "text-destructive",
+        required: "after:content-['*'] after:ml-0.5 after:text-destructive",
       },
     },
     defaultVariants: {
@@ -20,16 +21,24 @@ const labelVariants = cva(
 
 export interface LabelProps
   extends React.LabelHTMLAttributes<HTMLLabelElement>,
-    VariantProps<typeof labelVariants> {}
+    VariantProps<typeof labelVariants> {
+  required?: boolean;
+  error?: boolean;
+}
 
 const Label = React.forwardRef<HTMLLabelElement, LabelProps>(
-  ({ className, variant, ...props }, ref) => {
+  ({ className, variant, required, error, children, ...props }, ref) => {
+    const variantType = error ? "error" : required ? "required" : variant;
+    
     return (
       <label
         ref={ref}
-        className={cn(labelVariants({ variant }), className)}
+        className={cn(labelVariants({ variant: variantType }), className)}
         {...props}
-      />
+        {...(required && { 'aria-required': true })}
+      >
+        {children}
+      </label>
     )
   }
 )

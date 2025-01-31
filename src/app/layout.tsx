@@ -1,34 +1,22 @@
-import type { Metadata } from 'next'
-import { Inter } from 'next/font/google'
-import './globals.css'
-import { Toaster } from './components/ui/toaster'
-import { ThemeProvider } from './components/theme-provider'
+import "@/app/globals.css";
+import { AuthProvider } from "@/lib/context/AuthContext";
+import { ThemeProvider } from "@/app/theme-provider";
 
-const inter = Inter({ subsets: ['latin'] })
+export const metadata = {
+  title: "Retail Span",
+  description: "Empowering retailers with tools for planograms, pricing, and product management.",
+};
 
-export const metadata: Metadata = {
-  title: 'RetailSpan - Planogram & Pricing Management',
-  description: 'Retail space management and pricing optimization platform',
-}
-
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode
-}) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={inter.className}>
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="system"
-          enableSystem
-          disableTransitionOnChange
-        >
-          {children}
-          <Toaster />
-        </ThemeProvider>
+      <body className="bg-gray-900 text-gray-100">
+        {/* Wrap the app with AuthProvider and ThemeProvider */}
+        <AuthProvider>
+          <ThemeProvider>{children}</ThemeProvider>
+        </AuthProvider>
       </body>
     </html>
-  )
+  );
 }
+
