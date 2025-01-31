@@ -25,7 +25,6 @@ interface TabProps {
 
 interface TabPanelProps {
   children: ReactNode;
-  index?: number;
   isActive: boolean;
 }
 
@@ -41,10 +40,9 @@ export const Tabs: React.FC<TabsProps> = ({ defaultIndex = 0, children }) => {
   const tabPanels = childrenArray.find((child: any) => child.type === TabPanels);
 
   return (
-    <div>
+    <div className="w-full">
       {tabList && React.cloneElement(tabList as React.ReactElement<any>, { activeIndex, handleTabClick })}
-      {tabPanels &&
-        React.cloneElement(tabPanels as React.ReactElement<any>, { activeIndex })}
+      {tabPanels && React.cloneElement(tabPanels as React.ReactElement<any>, { activeIndex })}
     </div>
   );
 };
@@ -54,7 +52,7 @@ export const TabList: React.FC<TabListProps & { activeIndex?: number; handleTabC
   activeIndex,
   handleTabClick,
 }) => (
-  <div className="flex space-x-4 border-b border-gray-300 mb-4">
+  <div className="flex space-x-2 bg-gray-900 text-white p-2 rounded-lg shadow-md">
     {React.Children.map(children, (child, index) =>
       React.cloneElement(child as React.ReactElement<TabProps>, {
         index,
@@ -69,24 +67,20 @@ export const Tab: React.FC<TabProps> = ({ children, onClick, isActive }) => (
   <button
     onClick={onClick}
     className={cn(
-      'py-2 px-4 text-sm font-medium transition',
+      'flex-1 py-2 px-4 text-sm font-medium transition-all duration-300 rounded-md focus:outline-none',
       isActive
-        ? 'border-b-2 border-cyan-500 text-cyan-500'
-        : 'text-gray-500 hover:text-cyan-500 hover:border-cyan-500'
+        ? 'bg-cyan-600 text-white shadow-md'
+        : 'text-gray-400 hover:bg-cyan-500 hover:text-white'
     )}
   >
     {children}
   </button>
 );
 
-export const TabPanels: React.FC<TabPanelsProps & { activeIndex?: number }> = ({
-  children,
-  activeIndex,
-}) => (
-  <div>
+export const TabPanels: React.FC<TabPanelsProps & { activeIndex?: number }> = ({ children, activeIndex }) => (
+  <div className="mt-4">
     {React.Children.map(children, (child, index) =>
       React.cloneElement(child as React.ReactElement<TabPanelProps>, {
-        index,
         isActive: activeIndex === index,
       })
     )}
@@ -94,5 +88,8 @@ export const TabPanels: React.FC<TabPanelsProps & { activeIndex?: number }> = ({
 );
 
 export const TabPanel: React.FC<TabPanelProps> = ({ children, isActive }) => (
-  <div className={cn(isActive ? 'block' : 'hidden')}>{children}</div>
+  <div className={cn(isActive ? 'block' : 'hidden', 'p-4 bg-gray-800 text-white rounded-lg shadow-md')}>
+    {children}
+  </div>
 );
+

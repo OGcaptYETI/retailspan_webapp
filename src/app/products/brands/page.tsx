@@ -23,18 +23,24 @@ export default function BrandsPage() {
   }, []);
 
   const fetchBrands = async () => {
-    const data = await productApi.getBrands();
-    setBrands(data || []);
-  };
-
-  const fetchBrandFamilies = async () => {
-    const { data, error } = await productApi.getBrandFamiliesWithBrandNames(); // Update API function
-    if (error) {
-      console.error('Error fetching brand families:', error);
-    } else {
-      setBrandFamilies(data || []);
+    try {
+      const data = await productApi.getBrands();
+      console.log("🔍 Fetching brands:", data); // ✅ Debugging Log
+      setBrands(data || []);
+    } catch (error) {
+      console.error("Error fetching brands:", error);
     }
   };
+  
+  const fetchBrandFamilies = async () => {
+    try {
+      const families = await productApi.getBrandFamiliesWithBrandNames();
+      setBrandFamilies(families || []);
+    } catch (error) {
+      console.error('Error fetching brand families:', error);
+    }
+  };
+  
 
   const handleAddBrand = () => {
     setEditingBrand(null);
@@ -59,28 +65,27 @@ export default function BrandsPage() {
   const handleSaveBrand = async (brand: any) => {
     try {
       if (brand.id) {
-        // Update an existing brand
         const [error] = await productApi.updateBrand(brand.id, brand);
         if (error) throw error;
       } else {
-        // Create a new brand
         const [error] = await productApi.createBrand(brand);
-        if (error) throw error;
+        if (error) {
+          alert(error.message || "Failed to create brand");
+          return;
+        }
       }
   
-      // Refresh the brands table
-      await fetchBrands();
+      console.log("✅ Brand saved, refreshing list...");
+      await fetchBrands(); // Refresh brands from database
     } catch (error) {
-      console.error('Error saving brand:', error); // Log detailed error
-      if (error instanceof Error) {
-        alert(`Failed to save the brand: ${error.message || 'Unknown error'}`); // Notify the user
-      } else {
-        alert('Failed to save the brand: Unknown error'); // Notify the user
-      }
+      console.error("❌ Error saving brand:", error);
+      alert(error instanceof Error ? error.message : "Unknown error");
     } finally {
       setIsBrandModalOpen(false);
     }
   };
+  
+  
   
 
   const handleSaveBrandFamily = async (family: any) => {
@@ -88,7 +93,7 @@ export default function BrandsPage() {
       if (family.id) {
         await productApi.updateBrandFamily(family.id, family);
       } else {
-        await productApi.createBrandFamily(family);
+        await productApi.createBrandFamily(family); // ✅ No id sent
       }
       await fetchBrandFamilies();
     } catch (error) {
@@ -97,6 +102,7 @@ export default function BrandsPage() {
       setIsFamilyModalOpen(false);
     }
   };
+  
 
   return (
     <div className="p-6 space-y-6 bg-gray-100">
@@ -128,7 +134,7 @@ export default function BrandsPage() {
       <Table
   data={brandFamilies.map((family) => ({
     ...family,
-    brand_name: family.brands?.name || 'N/A', // Use the joined `name` field or default to 'N/A'
+    brand_name: family.brands?.name || 'N/A', // Use the joined name field or default to 'N/A'
   }))}
   columns={[
     { key: 'name', label: 'Brand Family Name' },
@@ -160,4 +166,5 @@ export default function BrandsPage() {
     </div>
   );
 }
+
 

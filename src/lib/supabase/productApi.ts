@@ -10,15 +10,14 @@ const productApi = {
         base_unit_price, wholesale_price, msrp,
         weight, width, height, depth, pack_size, is_active,
         image_url, created_at, updated_at,
-        brand_id, brands!products_brand_id_fkey(name) as brand_name, // ✅ Explicitly define foreign key
+        brand_id, brands!products_brand_id_fkey(name) as brand_name,
         category_id, product_categories(name) as category_name,
         unit_measure_id, units(name) as unit_name
       `);
   
     if (error) throw error;
     return data;
-  }
-  ,
+  },
 
   // ✅ Fetch product by ID
   async getProductById(productId: string | number) {
@@ -39,7 +38,7 @@ const productApi = {
   async createProduct(product: { [key: string]: any }) {
     const cleanedProduct = {
       ...product,
-      category_id: product?.category_id || "default_category_id", // Ensure a default value
+      category_id: product?.category_id || "default_category_id",
       brand_id: product?.brand_id || null,
       unit_measure_id: product?.unit_measure_id || null,
       base_unit_price: product?.base_unit_price || null,
@@ -126,15 +125,12 @@ const productApi = {
       throw error;
     }
 
-    // Retrieve public URL
     const { data: publicUrlData } = supabase.storage
       .from("product_images")
       .getPublicUrl(filePath);
 
-    //check for authenticated user
-      const user = await supabase.auth.getUser();
-console.log(user);
-
+    const user = await supabase.auth.getUser();
+    console.log(user);
 
     return publicUrlData.publicUrl;
   },
@@ -181,34 +177,246 @@ console.log(user);
   // ✅ Fetch all brands
   async getBrands() {
     const { data, error } = await supabase.from("brands").select("*");
-    if (error) {
-      console.error("Error fetching brands:", error);
-      throw error;
-    }
+    if (error) throw error;
     return data;
   },
 
-  // ✅ Fetch brand families with brand names
+  async deleteBrandFamily(familyId: string) {
+    const { error } = await supabase
+      .from("brand_families")
+      .delete()
+      .eq("id", familyId);
+
+    if (error) {
+      console.error("❌ Error deleting brand family:", error);
+      throw error;
+    }
+
+    console.log(`✅ Successfully deleted brand family with ID: ${familyId}`);
+}
+,
+
+  // ✅ Create a new brand
+  async createBrand(brand: { name: string; manufacturer: string; website?: string }) {
+    const { data: existingBrand, error: checkError } = await supabase
+      .from("brands")
+      .select("id")
+      .eq("name", brand.name)
+      .single();
+  
+    if (checkError && checkError.code !== "PGRST116") {
+      console.error("Error checking existing brand:", checkError);
+      return [checkError, null];
+    }
+  
+    if (existingBrand) {
+      console.error("Brand with this name already exists");
+      return [{ message: "Brand with this name already exists", code: "23505" }, null];
+    }
+  
+    const { data, error } = await supabase
+      .from("brands")
+      .insert([brand])
+      .select()
+      .single();
+  
+    return [error, data];
+  },
+
+  // ✅ Update an existing brand
+  async updateBrand(brandId: string, updates: { name?: string; manufacturer_id?: string; website?: string }) {
+    const { data, error } = await supabase
+      .from("brands")
+      .update(updates)
+      .eq("id", brandId)
+      .select();
+
+    if (error) throw error;
+    return data;
+  },
+
+  // ✅ Fetch all brand families with their brand names
   async getBrandFamiliesWithBrandNames() {
     const { data, error } = await supabase
       .from("brand_families")
-      .select("*, brands(name)");
+      .select(`
+        id, 
+        name, 
+        description, 
+        brand_id, 
+        brands!brand_families_brand_id_fkey (name)
+      `);
 
     if (error) {
       console.error("Error fetching brand families:", error);
-      throw error;
+      return [];
     }
+
+    console.log("✅ Brand Families Data:", data);
     return data;
   },
 
-  // ✅ Fetch product categories
+  // ✅ Create a new brand family
+  async createBrandFamily(family: { name: string; brand_id: string; description?: string }) {
+    const { data, error } = await supabase.from("brand_families").insert([family]).select();
+    if (error) throw error;
+    return data;
+  },
+
+  // ✅ Update an existing brand family
+  async updateBrandFamily(familyId: string, updates: { name?: string; brand_id?: string; description?: string }) {
+    const { data, error } = await supabase.from("brand_families").update(updates).eq("id", familyId).select();
+    if (error) throw error;
+    return data;
+  },
+
+  // ✅ Enhanced Product Categories Management
   async getProductCategories() {
-    const { data, error } = await supabase.from("product_categories").select("*");
+    const { data, error } = await supabase
+      .from("product_categories")
+      .select("*, parent:parent_id(name)")
+      .order('name');
+      
     if (error) {
       console.error("Error fetching product categories:", error);
       throw error;
     }
     return data;
+  },
+
+  // ✅ Create a new product category
+  async createProductCategory(category: {
+    name: string;
+    description?: string | null;
+    parent_id?: string | null;
+  }) {
+    const { data, error } = await supabase
+      .from("product_categories")
+      .insert([{
+        name: category.name,
+        description: category.description || null,
+        parent_id: category.parent_id || null
+      }])
+      .select();
+
+    if (error) {
+      console.error("Error creating product category:", error);
+      throw error;
+    }
+    return data;
+  },
+
+  // ✅ Update an existing product category
+  async updateProductCategory(
+    categoryId: string,
+    updates: {
+      name?: string;
+      description?: string | null;
+      parent_id?: string | null;
+    }
+  ) {
+    const { data, error } = await supabase
+      .from("product_categories")
+      .update({
+        name: updates.name,
+        description: updates.description,
+        parent_id: updates.parent_id
+      })
+      .eq('id', categoryId)
+      .select();
+
+    if (error) {
+      console.error("Error updating product category:", error);
+      throw error;
+    }
+    return data;
+  },
+
+  // ✅ Delete a product category with safety checks
+  async deleteProductCategory(categoryId: string) {
+    // Check for subcategories
+    const { data: subcategories, error: subError } = await supabase
+      .from("product_categories")
+      .select("id")
+      .eq("parent_id", categoryId);
+
+    if (subError) {
+      console.error("Error checking for subcategories:", subError);
+      throw subError;
+    }
+
+    if (subcategories && subcategories.length > 0) {
+      throw new Error("Cannot delete category with existing subcategories. Please delete or reassign subcategories first.");
+    }
+
+    // Check for products using this category
+    const { data: products, error: prodError } = await supabase
+      .from("products")
+      .select("id")
+      .eq("category_id", categoryId);
+
+    if (prodError) {
+      console.error("Error checking for products:", prodError);
+      throw prodError;
+    }
+
+    if (products && products.length > 0) {
+      throw new Error("Cannot delete category that is in use by products. Please reassign products first.");
+    }
+
+    // If all checks pass, delete the category
+    const { data, error } = await supabase
+      .from("product_categories")
+      .delete()
+      .eq("id", categoryId)
+      .select();
+
+    if (error) {
+      console.error("Error deleting product category:", error);
+      throw error;
+    }
+
+    return data;
+  },
+
+  // ✅ Get subcategories for a specific category
+  async getSubcategories(parentId: string) {
+    const { data, error } = await supabase
+      .from("product_categories")
+      .select("*")
+      .eq("parent_id", parentId)
+      .order('name');
+
+    if (error) {
+      console.error("Error fetching subcategories:", error);
+      throw error;
+    }
+    return data;
+  },
+
+  // ✅ Check category dependencies
+  async getCategoryDependencies(categoryId: string) {
+    const [productsResponse, subcategoriesResponse] = await Promise.all([
+      supabase
+        .from("products")
+        .select("id, name")
+        .eq("category_id", categoryId),
+      supabase
+        .from("product_categories")
+        .select("id, name")
+        .eq("parent_id", categoryId)
+    ]);
+
+    return {
+      products: productsResponse.data || [],
+      subcategories: subcategoriesResponse.data || [],
+      hasProducts: (productsResponse.data || []).length > 0,
+      hasSubcategories: (subcategoriesResponse.data || []).length > 0,
+      errors: {
+        products: productsResponse.error,
+        subcategories: subcategoriesResponse.error
+      }
+    };
   },
 
   // ✅ Fetch unit measures
@@ -236,7 +444,6 @@ console.log(user);
       .upload(filePath, file);
     if (error) throw error;
 
-    // Retrieve public URL
     const { data: publicUrlData } = supabase.storage
       .from("sell_sheets")
       .getPublicUrl(filePath);
@@ -246,5 +453,20 @@ console.log(user);
 };
 
 export default productApi;
+
+export const getBrands = async (): Promise<any[]> => {
+  const { data, error } = await supabase
+    .from("brands")
+    .select("*")
+    .order("name", { ascending: true });
+
+  if (error) {
+    console.error("❌ Error fetching brands from Supabase:", error);
+    return [];
+  }
+
+  console.log("✅ Brands from Supabase:", data);
+  return data;
+};
   
   

@@ -10,7 +10,7 @@ interface TableProps {
   columns: Array<{ key: string; label: string }>; // Array of column definitions
   onRowClick?: (row: Record<string, any>) => void; // Callback for row click
   onEditClick?: (row: Record<string, any>) => void; // Callback for edit button click
-  onDeleteClick?: (id: string) => void; // ✅ Added delete function
+  onDeleteClick?: (id: string) => void; // Callback for delete button click
   className?: string; // Additional styling
   searchPlaceholder?: string; // Placeholder for the search input
 }
@@ -20,7 +20,7 @@ export const Table: React.FC<TableProps> = ({
   columns,
   onRowClick,
   onEditClick,
-  onDeleteClick, // ✅ Now accepting delete function
+  onDeleteClick,
   className,
   searchPlaceholder = "Search...",
 }) => {
@@ -42,12 +42,11 @@ export const Table: React.FC<TableProps> = ({
 
   const sortedData = useMemo(() => {
     if (!sortConfig) return filteredData;
-    const sorted = [...filteredData].sort((a, b) => {
+    return [...filteredData].sort((a, b) => {
       if (a[sortConfig.key] < b[sortConfig.key]) return sortConfig.direction === "asc" ? -1 : 1;
       if (a[sortConfig.key] > b[sortConfig.key]) return sortConfig.direction === "asc" ? 1 : -1;
       return 0;
     });
-    return sorted;
   }, [filteredData, sortConfig]);
 
   const handleSort = (key: string) => {
@@ -65,72 +64,78 @@ export const Table: React.FC<TableProps> = ({
         placeholder={searchPlaceholder}
         value={searchTerm}
         onChange={(e) => setSearchTerm(e.target.value)}
-        className="mb-4"
+        className="mb-4 w-full px-3 py-2 rounded-lg border border-gray-700 bg-gray-900 text-white"
       />
 
       {/* Table */}
-      <div className="overflow-auto">
-        <table className="table-auto w-full border-collapse text-gray-900">
+      <div className="overflow-auto rounded-lg shadow-md bg-gray-900">
+        <table className="table-auto w-full border-collapse text-white">
           <thead>
-            <tr className="bg-gray-800 text-white">
+            <tr className="bg-gray-800 text-white uppercase tracking-wide text-sm">
               {columns.map((col) => (
                 <th
                   key={col.key}
-                  className="px-4 py-2 border border-gray-600 text-left cursor-pointer"
+                  className="px-4 py-3 border-b border-gray-700 text-left cursor-pointer hover:bg-gray-700 transition"
                   onClick={() => handleSort(col.key)}
                 >
                   {col.label}{" "}
                   {sortConfig?.key === col.key && (
-                    <span>{sortConfig.direction === "asc" ? "↑" : "↓"}</span>
+                    <span>{sortConfig.direction === "asc" ? "▲" : "▼"}</span>
                   )}
                 </th>
               ))}
-              <th className="px-4 py-2 border border-gray-600 text-left">Actions</th>
+              <th className="px-4 py-3 border-b border-gray-700 text-left">Actions</th>
             </tr>
           </thead>
           <tbody>
-            {sortedData.map((row, index) => (
-              <tr
-                key={index}
-                className={cn(
-                  "hover:bg-gray-100 cursor-pointer",
-                  onRowClick && "hover:bg-gray-200"
-                )}
-                onClick={() => onRowClick?.(row)}
-              >
-                {columns.map((col) => (
-                  <td key={col.key} className="border border-gray-600 px-4 py-2">
-                    {row[col.key]}
-                  </td>
-                ))}
-                <td className="border border-gray-600 px-4 py-2 space-x-2">
-                  <Button
-                    onClick={(e) => {
-                      e.stopPropagation(); // Prevent triggering row click
-                      onEditClick?.(row);
-                    }}
-                    className="bg-green-500 text-white hover:bg-green-600"
-                  >
-                    Edit
-                  </Button>
-                  {onDeleteClick && (
-                    <Button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onDeleteClick(row.id);
-                      }}
-                      className="bg-red-500 text-white hover:bg-red-600"
-                    >
-                      Delete
-                    </Button>
-                  )}
+            {sortedData.length === 0 ? (
+              <tr>
+                <td colSpan={columns.length + 1} className="text-center py-4 text-gray-400">
+                  No data available
                 </td>
               </tr>
-            ))}
+            ) : (
+              sortedData.map((row, index) => (
+                <tr
+                  key={index}
+                  className="hover:bg-gray-800 transition cursor-pointer"
+                  onClick={() => onRowClick?.(row)}
+                >
+                  {columns.map((col) => (
+                    <td key={col.key} className="border-b border-gray-700 px-4 py-3">
+                      {row[col.key] || "—"}
+                    </td>
+                  ))}
+                  <td className="border-b border-gray-700 px-4 py-3 space-x-2">
+                    <Button
+                      onClick={(e) => {
+                        e.stopPropagation(); // Prevent triggering row click
+                        onEditClick?.(row);
+                      }}
+                      className="bg-green-500 text-white hover:bg-green-600 px-3 py-1 rounded"
+                    >
+                      Edit
+                    </Button>
+                    {onDeleteClick && (
+                      <Button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onDeleteClick(row.id);
+                        }}
+                        className="bg-red-500 text-white hover:bg-red-600 px-3 py-1 rounded"
+                      >
+                        Delete
+                      </Button>
+                    )}
+                  </td>
+                </tr>
+              ))
+            )}
           </tbody>
         </table>
       </div>
     </div>
   );
 };
+
 

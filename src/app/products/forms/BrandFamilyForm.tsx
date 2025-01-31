@@ -15,17 +15,25 @@ export const BrandFamilyForm = ({
   onCancel: () => void;
 }) => {
   const [brands, setBrands] = useState<any[]>([]);
+  const [manufacturers, setManufacturers] = useState<any[]>([]);
   const [name, setName] = useState(brandFamily?.name || '');
   const [description, setDescription] = useState(brandFamily?.description || '');
   const [brandId, setBrandId] = useState(brandFamily?.brand_id || '');
+  const [selectedManufacturer, setSelectedManufacturer] = useState('');
 
+  // Fetch brands and manufacturers
   useEffect(() => {
-    async function fetchBrands() {
-      const { data, error } = await supabase.from('brands').select('*');
-      if (error) console.error('Error fetching brands:', error);
-      else setBrands(data || []);
+    async function fetchData() {
+      const { data: brandsData, error: brandError } = await supabase.from('brands').select('id, name, manufacturer');
+      if (brandError) console.error('Error fetching brands:', brandError);
+      else setBrands(brandsData || []);
+
+      const { data: manufacturersData, error: manufacturerError } = await supabase.from('manufacturers').select('id, name');
+      if (manufacturerError) console.error('Error fetching manufacturers:', manufacturerError);
+      else setManufacturers(manufacturersData || []);
     }
-    fetchBrands();
+
+    fetchData();
   }, []);
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -34,23 +42,40 @@ export const BrandFamilyForm = ({
       alert('Name and Brand are required.');
       return;
     }
-    onSave({ id: brandFamily?.id, name, description, brand_id: brandId });
+
+    // Remove `id` from submission to prevent conflict
+    const payload = { name, description, brand_id: brandId };
+
+    onSave(payload);
   };
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      <Input
-        label="Brand Family Name"
-        value={name}
-        onChange={(e) => setName(e.target.value)}
-        required
-      />
-      <Input
-        label="Description"
-        value={description}
-        onChange={(e) => setDescription(e.target.value)}
-      />
-      <label htmlFor="brand-select" className="block text-sm font-medium text-gray-700">Brand</label>
+      <Input label="Brand Family Name" value={name} onChange={(e) => setName(e.target.value)} required />
+      <Input label="Description" value={description} onChange={(e) => setDescription(e.target.value)} />
+
+      {/* Manufacturer Dropdown */}
+      <label htmlFor="manufacturer-select" className="block text-sm font-medium text-gray-700">
+        Select Manufacturer
+      </label>
+      <select
+        id="manufacturer-select"
+        value={selectedManufacturer}
+        onChange={(e) => setSelectedManufacturer(e.target.value)}
+        className="border rounded p-2 w-full"
+      >
+        <option value="">Filter by Manufacturer</option>
+        {manufacturers.map((manufacturer) => (
+          <option key={manufacturer.id} value={manufacturer.name}>
+            {manufacturer.name}
+          </option>
+        ))}
+      </select>
+
+      {/* Brand Dropdown (Filtered by Manufacturer) */}
+      <label htmlFor="brand-select" className="block text-sm font-medium text-gray-700">
+        Select Brand
+      </label>
       <select
         id="brand-select"
         value={brandId}
@@ -59,12 +84,15 @@ export const BrandFamilyForm = ({
         required
       >
         <option value="">Select Brand</option>
-        {brands.map((brand) => (
-          <option key={brand.id} value={brand.id}>
-            {brand.name}
-          </option>
-        ))}
+        {brands
+          .filter((brand) => !selectedManufacturer || brand.manufacturer === selectedManufacturer)
+          .map((brand) => (
+            <option key={brand.id} value={brand.id}>
+              {brand.name}
+            </option>
+          ))}
       </select>
+
       <div className="flex justify-end space-x-4">
         <Button type="button" variant="ghost" onClick={onCancel}>
           Cancel

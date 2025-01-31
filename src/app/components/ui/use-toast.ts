@@ -1,11 +1,13 @@
 "use client";
 
 import * as React from "react";
+import { cn } from "@/lib/utils/cn";
 
 // --------------------------------------------------
 // Types
 // --------------------------------------------------
 export type ToastActionElement = React.ReactNode;
+export type ToastVariant = 'default' | 'destructive' | 'success' | 'warning';
 
 export interface ToastProps {
   open?: boolean;
@@ -13,6 +15,8 @@ export interface ToastProps {
   title?: React.ReactNode;
   description?: React.ReactNode;
   action?: ToastActionElement;
+  variant?: ToastVariant;
+  className?: string;
 }
 
 // --------------------------------------------------
@@ -25,6 +29,9 @@ type ToasterToast = ToastProps & {
   id: string;
   title?: React.ReactNode;
   description?: React.ReactNode;
+  variant?: ToastVariant;
+  className?: string;
+  duration?: number;
 };
 
 const actionTypes = {
@@ -155,22 +162,35 @@ function dispatch(action: Action) {
 // --------------------------------------------------
 interface Toast extends Omit<ToasterToast, "id"> {}
 
-export function toast({ ...props }: Toast) {
+export function toast({ variant = 'default', className, ...props }: Toast) {
   const id = genId();
+  
+  const variantClassNames = {
+    default: 'bg-background text-foreground',
+    destructive: 'bg-destructive text-destructive-foreground',
+    success: 'bg-success text-success-foreground',
+    warning: 'bg-warning text-warning-foreground'
+  };
 
-  const update = (props: ToasterToast) =>
-    dispatch({
-      type: "UPDATE_TOAST",
-      toast: { ...props, id },
-    });
+  const finalClassName = cn(
+    variantClassNames[variant],
+    className
+  );
 
   const dismiss = () => dispatch({ type: "DISMISS_TOAST", toastId: id });
+
+  const update = (toast: Partial<Toast>) => dispatch({
+    type: "UPDATE_TOAST",
+    toast: { ...toast, id },
+  });
 
   dispatch({
     type: "ADD_TOAST",
     toast: {
       ...props,
       id,
+      variant,
+      className: finalClassName,
       open: true,
       onOpenChange: (open) => {
         if (!open) dismiss();
