@@ -1,14 +1,12 @@
 // File: src/app/components/templates/pages/LoginPage.tsx
-
 'use client';
 
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+import { supabase } from '@/lib/supabase/client'; // ✅ Import the existing client
 import { Heading, Text } from '@/app/components/atoms/typography';
 import { Button } from '@/app/components/atoms/buttons';
 import { FormField } from '@/app/components/molecules/forms';
-import { cn } from '@/lib/utils/cn';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
@@ -16,7 +14,6 @@ export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
-  const supabase = createClientComponentClient();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -53,9 +50,7 @@ export default function LoginPage() {
       <div className="flex items-center justify-center p-8">
         <div className="w-full max-w-md space-y-8">
           <div className="space-y-2 text-center">
-            <Heading level={1} className="text-3xl font-bold">
-              Sign in to Your Account
-            </Heading>
+            <Heading level={1} className="text-3xl font-bold">Sign in to Your Account</Heading>
             <Text className="text-sm text-muted-foreground">
               Enter your credentials below to get started.
             </Text>
@@ -78,21 +73,14 @@ export default function LoginPage() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
             />
-            {error && (
-              <Text className="text-sm text-red-500 text-center">{error}</Text>
-            )}
+            {error && <Text className="text-sm text-red-500 text-center">{error}</Text>}
             <Button type="submit" className="w-full" disabled={isLoading}>
               {isLoading ? 'Signing in...' : 'Sign In'}
             </Button>
           </form>
-
           <div className="text-center flex flex-col space-y-4">
-          <a href="/forgot-password" className="text-sm text-gray-400 hover:underline">
-            Forgot your password?
-          </a>
-            <a href="/register" className="text-sm text-cyan-400 hover:underline">
-             Don't have an account? Sign up
-          </a>
+            <a href="/forgot-password" className="text-sm text-gray-400 hover:underline">Forgot your password?</a>
+            <a href="/register" className="text-sm text-cyan-400 hover:underline">Don't have an account? Sign up</a>
           </div>
         </div>
       </div>

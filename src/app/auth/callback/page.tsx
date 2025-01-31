@@ -2,24 +2,24 @@
 
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+import { supabase } from '@/lib/supabase/client'; // ✅ Import from client.ts
 
 export default function CallbackPage() {
   const router = useRouter();
-  const supabase = createClientComponentClient();
 
   useEffect(() => {
     const confirmEmail = async () => {
       const params = new URLSearchParams(window.location.search);
       const code = params.get('code');
-      
+
       if (code) {
         try {
-          const email = params.get('email');
+          const email = params.get('email') || ''; // Ensure email is a string
+
           const { error } = await supabase.auth.verifyOtp({
             token: code,
             type: 'signup',
-            email: email || '', // Provide a default value if email is null
+            email, // ✅ Cleaner syntax
           });
 
           if (error) {
@@ -36,7 +36,7 @@ export default function CallbackPage() {
     };
 
     confirmEmail();
-  }, [router, supabase]);
+  }, [router]); // ✅ Removed supabase from dependencies
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-900 text-gray-100">
@@ -44,3 +44,4 @@ export default function CallbackPage() {
     </div>
   );
 }
+

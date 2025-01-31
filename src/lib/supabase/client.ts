@@ -1,14 +1,19 @@
-import { createClient } from '@supabase/supabase-js'
-import { type Database } from '../../types/supabase'
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
+import { createClient } from '@supabase/supabase-js';
+import { type Database } from '../../types/supabase';
 
-// Create a Supabase client for client components
-export const createClientSupabaseClient = () => {
-  return createClientComponentClient<Database>()
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+
+// ✅ Create a single Supabase client instance
+export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
+  auth: {
+    persistSession: true,
+    autoRefreshToken: true,
+    detectSessionInUrl: true,
+  },
+});
+
+// ✅ Make Supabase accessible in the browser console for debugging
+if (typeof window !== 'undefined') {
+  (window as any).supabase = supabase;
 }
-
-// Create a standard Supabase client (for direct API usage)
-export const supabase = createClient<Database>(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-)

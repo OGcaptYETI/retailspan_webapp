@@ -131,6 +131,11 @@ const productApi = {
       .from("product_images")
       .getPublicUrl(filePath);
 
+    //check for authenticated user
+      const user = await supabase.auth.getUser();
+console.log(user);
+
+
     return publicUrlData.publicUrl;
   },
 
