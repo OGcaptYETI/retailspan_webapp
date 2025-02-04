@@ -206,8 +206,120 @@ export interface Database {
         };
         Insert: Omit<Database["public"]["Tables"]["product_images"]["Row"], "id" | "created_at" | "updated_at">;
         Update: Partial<Database["public"]["Tables"]["product_images"]["Row"]>;
-      };
-    };
-  };
-}
+        };
+        states: {
+          Row: {
+            id: string;
+            state_code: string;
+            state_name: string;
+            created_at: string;
+            updated_at: string;
+          };
+          Insert: Omit<Database["public"]["Tables"]["states"]["Row"], "id" | "created_at" | "updated_at">;
+          Update: Partial<Database["public"]["Tables"]["states"]["Row"]>;
+        };
+  
+        // ✅ New Table: Competitive Pricing
+        competitive_pricing: {
+          Row: {
+            id: string;
+            competitor_name: string;
+            category_id: string;
+            base_price: number;
+            promotion_type?: string | null;
+            buydown_amount?: number | null;
+            effective_price: number;
+            margin_percentage: number;
+            status: string;
+            created_at: string;
+            updated_at: string;
+          };
+          Insert: Omit<Database["public"]["Tables"]["competitive_pricing"]["Row"], "id" | "created_at" | "updated_at">;
+          Update: Partial<Database["public"]["Tables"]["competitive_pricing"]["Row"]>;
+        };
+            };
+          };
+          };
+        
+        export interface Contract {
+          id: string;
+          name: string;
+          manufacturer_id: string;
+          category_id: string;
+          levels: ContractLevel[];
+          enhancement: number;
+          status: 'active' | 'pending' | 'expired';
+          updated_at: string;
+          expires_at: string;
+        }
+        
+        export interface ContractLevel {
+          id: string;
+          name: string;
+          discount: number;
+        }
 
+
+        export interface Product {
+          id: string;
+          name: string;
+          sku: string;
+          category_id: string;
+          brand_id: string;
+          base_unit_price: number;
+          wholesale_price: number;
+          msrp: number;
+          created_at: string;
+          updated_at: string;
+        }
+        
+        export interface ContractFormData {
+          name: string;
+          manufacturer_id: string;
+          category_id: string;
+          levels: { [key: string]: number };
+          enhancement: string;
+          status: string;
+          expires_at: string;
+        }
+        
+        export interface ContractResponse extends ContractFormData {
+          id: string;
+          created_at: string;
+          updated_at: string;
+        }
+
+        export interface ContractFormData {
+
+          name: string;
+        
+          manufacturer_id: string;
+        
+          category_id: string;
+        
+          levels: { [key: string]: number };
+        
+          enhancement: string;
+        
+          status: string;
+        
+          expires_at: string;
+        
+        }
+
+        export interface Product {
+          id: string;
+          name: string;
+          sku: string;
+          category_id: string;
+          brand_id: string;
+          base_unit_price: number;
+          wholesale_price: number;
+          msrp: number;
+          created_at: string;
+          updated_at: string;
+          dimensions: {
+            width: number;
+            height: number;
+          };
+        }

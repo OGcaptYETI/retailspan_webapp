@@ -4,7 +4,7 @@
 export * from './layouts/AuthLayout'
 
 // Page Templates
-export * from './DashboardLayout'
+export * from './layouts/DashboardLayout'
 export * from './Header'
 
 

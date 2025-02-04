@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 import React, { useState, useEffect } from "react";
 import { Table } from "@/app/components/molecules/Table";
@@ -12,7 +12,7 @@ export default function UnitsPage() {
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
   const [units, setUnits] = useState<any[]>([]);
 
-  // Fetch units from Supabase
+  // Fetch units on mount
   useEffect(() => {
     async function fetchUnits() {
       const data = await unitApi.getUnits();
@@ -21,54 +21,46 @@ export default function UnitsPage() {
     fetchUnits();
   }, []);
 
-  // Handle adding a new unit
+  // Add a new unit
   const handleAddUnit = () => {
-    setEditingUnit(null); // Clear any existing unit data
-    setIsModalOpen(true); // Open modal for adding a new unit
+    setEditingUnit(null);
+    setIsModalOpen(true);
   };
 
-  // Handle editing an existing unit
+  // Edit existing unit
   const handleEditClick = (unit: any) => {
-    setEditingUnit(unit); // Set the selected unit for editing
-    setIsModalOpen(true); // Open modal for editing
+    setEditingUnit(unit);
+    setIsModalOpen(true);
   };
 
-  // Handle saving a unit (create or update)
+  // Save (create/update) unit
   const handleSaveUnit = async (unit: any) => {
     try {
       if (unit.id) {
-        // Update existing unit
         await unitApi.updateUnit(unit.id, unit);
       } else {
-        // Create a new unit
         await unitApi.createUnit(unit);
       }
 
-      // Refresh the table
       const updatedUnits = await unitApi.getUnits();
       setUnits(updatedUnits);
     } catch (error) {
       console.error("Error saving unit:", error);
     } finally {
-      setIsModalOpen(false); // Close modal
+      setIsModalOpen(false);
     }
   };
 
   return (
-    <div className="p-6 space-y-6 bg-gray-100">
-      <h1 className="text-2xl font-bold text-gray-800">Units of Measure</h1>
+    <div className="p-6 space-y-6 bg-background text-foreground">
+      <h1 className="text-2xl font-bold">Units of Measure</h1>
 
-      {/* Add Unit Button */}
       <div className="mb-4">
-        <Button
-          onClick={handleAddUnit}
-          className="bg-blue-500 text-white hover:bg-blue-600"
-        >
+        <Button variant="default" onClick={handleAddUnit}>
           Add Unit
         </Button>
       </div>
 
-      {/* Table */}
       <Table
         data={units}
         columns={[
@@ -76,16 +68,15 @@ export default function UnitsPage() {
           { key: "description", label: "Description" },
           { key: "category", label: "Category" },
         ]}
-        onEditClick={handleEditClick} // Pass the edit handler
+        onEditClick={handleEditClick}
         searchPlaceholder="Search Units..."
       />
 
-      {/* Modal for Unit Form */}
       <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)}>
         <UnitForm
-          unit={editingUnit} // Pass the selected unit (null if adding a new one)
-          onSubmit={handleSaveUnit} // Save handler
-          onCancel={() => setIsModalOpen(false)} // Close modal on cancel
+          unit={editingUnit}
+          onSubmit={handleSaveUnit}
+          onCancel={() => setIsModalOpen(false)}
         />
       </Modal>
     </div>

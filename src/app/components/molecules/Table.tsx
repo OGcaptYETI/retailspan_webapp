@@ -1,18 +1,28 @@
-'use client';
+"use client";
 
 import React, { useState, useMemo } from "react";
 import { Button } from "@/app/components/atoms/buttons";
 import { Input } from "@/app/components/atoms/inputs";
 import { cn } from "@/lib/utils/cn";
+import { Edit2, Trash2 } from "lucide-react";
+
+export interface TableColumn<T = Record<string, unknown>> {
+  key: string;
+  label: string;
+  render?: (value: unknown, row: T) => React.ReactNode;
+  sortable?: boolean;
+  width?: string;
+}
 
 interface TableProps {
-  data: Array<Record<string, any>>; // Array of objects representing rows
-  columns: Array<{ key: string; label: string }>; // Array of column definitions
-  onRowClick?: (row: Record<string, any>) => void; // Callback for row click
-  onEditClick?: (row: Record<string, any>) => void; // Callback for edit button click
-  onDeleteClick?: (id: string) => void; // Callback for delete button click
-  className?: string; // Additional styling
-  searchPlaceholder?: string; // Placeholder for the search input
+  data: Array<Record<string, unknown>>;
+  columns: Array<TableColumn>;
+  onRowClick?: (row: Record<string, unknown>) => void;
+  onEditClick?: (row: Record<string, unknown>) => void;
+  onDeleteClick?: (id: string) => void;
+  searchPlaceholder?: string;
+  className?: string;
+  isLoading?: boolean;
 }
 
 export const Table: React.FC<TableProps> = ({
@@ -21,12 +31,16 @@ export const Table: React.FC<TableProps> = ({
   onRowClick,
   onEditClick,
   onDeleteClick,
-  className,
   searchPlaceholder = "Search...",
+  className,
+  isLoading = false,
 }) => {
   const [searchTerm, setSearchTerm] = useState("");
+  const [sortConfig, setSortConfig] = useState<{
+    key: string;
+    direction: "asc" | "desc";
+  } | null>(null);
 
-  // Filter data based on the search term
   const filteredData = useMemo(() => {
     if (!searchTerm) return data;
     const lowerSearchTerm = searchTerm.toLowerCase();
@@ -37,97 +51,136 @@ export const Table: React.FC<TableProps> = ({
     );
   }, [data, searchTerm]);
 
-  // Handle sorting by column
-  const [sortConfig, setSortConfig] = useState<{ key: string; direction: "asc" | "desc" } | null>(null);
-
   const sortedData = useMemo(() => {
     if (!sortConfig) return filteredData;
     return [...filteredData].sort((a, b) => {
-      if (a[sortConfig.key] < b[sortConfig.key]) return sortConfig.direction === "asc" ? -1 : 1;
-      if (a[sortConfig.key] > b[sortConfig.key]) return sortConfig.direction === "asc" ? 1 : -1;
-      return 0;
+      const aValue = a[sortConfig.key] as string | number;
+      const bValue = b[sortConfig.key] as string | number;
+      if (aValue === bValue) return 0;
+      if (sortConfig.direction === "asc") {
+        return aValue < bValue ? -1 : 1;
+      } else {
+        return aValue > bValue ? -1 : 1;
+      }
     });
   }, [filteredData, sortConfig]);
 
   const handleSort = (key: string) => {
-    setSortConfig((prev) =>
-      prev && prev.key === key
-        ? { key, direction: prev.direction === "asc" ? "desc" : "asc" }
-        : { key, direction: "asc" }
-    );
+    setSortConfig((current) => {
+      if (!current || current.key !== key) {
+        return { key, direction: "asc" };
+      }
+      if (current.direction === "asc") {
+        return { key, direction: "desc" };
+      }
+      return null;
+    });
   };
 
   return (
     <div className={cn("space-y-4", className)}>
-      {/* Search Field */}
       <Input
+        type="text"
         placeholder={searchPlaceholder}
         value={searchTerm}
         onChange={(e) => setSearchTerm(e.target.value)}
-        className="mb-4 w-full px-3 py-2 rounded-lg border border-gray-700 bg-gray-900 text-white"
+        className="max-w-sm"
       />
 
-      {/* Table */}
-      <div className="overflow-auto rounded-lg shadow-md bg-gray-900">
-        <table className="table-auto w-full border-collapse text-white">
-          <thead>
-            <tr className="bg-gray-800 text-white uppercase tracking-wide text-sm">
-              {columns.map((col) => (
+      <div className="overflow-x-auto rounded-lg border border-gray-200">
+        <table className="min-w-full divide-y divide-gray-200">
+          <thead className="bg-gray-50">
+            <tr>
+              {columns.map((column) => (
                 <th
-                  key={col.key}
-                  className="px-4 py-3 border-b border-gray-700 text-left cursor-pointer hover:bg-gray-700 transition"
-                  onClick={() => handleSort(col.key)}
+                  key={column.key}
+                  onClick={() => column.sortable && handleSort(column.key)}
+                  className={cn(
+                    "px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider",
+                    column.sortable && "cursor-pointer hover:bg-gray-100"
+                  )}
+                  style={column.width ? { width: column.width } : undefined}
                 >
-                  {col.label}{" "}
-                  {sortConfig?.key === col.key && (
-                    <span>{sortConfig.direction === "asc" ? "▲" : "▼"}</span>
+                  {column.label}
+                  {sortConfig?.key === column.key && (
+                    <span className="ml-2">
+                      {sortConfig.direction === "asc" ? "↑" : "↓"}
+                    </span>
                   )}
                 </th>
               ))}
-              <th className="px-4 py-3 border-b border-gray-700 text-left">Actions</th>
+              {(onEditClick || onDeleteClick) && (
+                <th className="px-6 py-3 text-right">Actions</th>
+              )}
             </tr>
           </thead>
-          <tbody>
-            {sortedData.length === 0 ? (
+          <tbody className="bg-white divide-y divide-gray-200">
+            {isLoading ? (
               <tr>
-                <td colSpan={columns.length + 1} className="text-center py-4 text-gray-400">
+                <td
+                  colSpan={columns.length + (onEditClick || onDeleteClick ? 1 : 0)}
+                  className="px-6 py-4 text-center"
+                >
+                  Loading...
+                </td>
+              </tr>
+            ) : sortedData.length === 0 ? (
+              <tr>
+                <td
+                  colSpan={columns.length + (onEditClick || onDeleteClick ? 1 : 0)}
+                  className="px-6 py-4 text-center"
+                >
                   No data available
                 </td>
               </tr>
             ) : (
-              sortedData.map((row, index) => (
+              sortedData.map((row, rowIndex) => (
                 <tr
-                  key={index}
-                  className="hover:bg-gray-800 transition cursor-pointer"
+                  key={row.id ? String(row.id) : rowIndex}
                   onClick={() => onRowClick?.(row)}
+                  className={cn(
+                    "hover:bg-gray-50",
+                    onRowClick && "cursor-pointer"
+                  )}
                 >
-                  {columns.map((col) => (
-                    <td key={col.key} className="border-b border-gray-700 px-4 py-3">
-                      {row[col.key] || "—"}
+                  {columns.map((column) => (
+                    <td
+                      key={column.key}
+                      className="px-6 py-4 whitespace-nowrap text-sm text-gray-900"
+                    >
+                      {column.render
+                        ? column.render(row[column.key], row)
+                        : (row[column.key] as unknown as React.ReactNode)}
                     </td>
                   ))}
-                  <td className="border-b border-gray-700 px-4 py-3 space-x-2">
-                    <Button
-                      onClick={(e) => {
-                        e.stopPropagation(); // Prevent triggering row click
-                        onEditClick?.(row);
-                      }}
-                      className="bg-green-500 text-white hover:bg-green-600 px-3 py-1 rounded"
-                    >
-                      Edit
-                    </Button>
-                    {onDeleteClick && (
-                      <Button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onDeleteClick(row.id);
-                        }}
-                        className="bg-red-500 text-white hover:bg-red-600 px-3 py-1 rounded"
-                      >
-                        Delete
-                      </Button>
-                    )}
-                  </td>
+                  {(onEditClick || onDeleteClick) && (
+                    <td className="px-6 py-4 text-right text-sm font-medium space-x-2">
+                      {onEditClick && (
+                        <Button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onEditClick(row);
+                          }}
+                          variant="ghost"
+                          size="sm"
+                        >
+                          <Edit2 className="w-4 h-4" />
+                        </Button>
+                      )}
+                      {onDeleteClick && (
+                        <Button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onDeleteClick(String(row.id));
+                          }}
+                          variant="ghost"
+                          size="sm"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      )}
+                    </td>
+                  )}
                 </tr>
               ))
             )}
@@ -137,5 +190,6 @@ export const Table: React.FC<TableProps> = ({
     </div>
   );
 };
+
 
 

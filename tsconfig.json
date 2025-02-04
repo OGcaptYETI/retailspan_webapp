@@ -1,6 +1,8 @@
 {
   "compilerOptions": {
-    "target": "es5",
+    "strictNullChecks": true,
+    "strictPropertyInitialization": true,
+    "target": "esnext",
     "lib": ["dom", "dom.iterable", "esnext"],
     "allowJs": true,
     "skipLibCheck": true,
@@ -10,7 +12,7 @@
     "esModuleInterop": true,
     "module": "esnext",
     // "moduleResolution": "node" is also valid; "bundler" is a newer option in TS 5.x & Next 13+
-    "moduleResolution": "bundler",
+    "moduleResolution": "node",
     "resolveJsonModule": true,
     "isolatedModules": true,
     "jsx": "preserve",

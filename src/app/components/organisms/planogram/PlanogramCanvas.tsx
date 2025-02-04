@@ -5,7 +5,6 @@ import type { Product } from "@/types/supabase"
 import { 
   toCanvasScale, 
   fromCanvasScale, 
-  canProductFit, 
   findNearestValidPosition,
   type Position,
   type FixtureBounds
@@ -20,7 +19,6 @@ export interface PlanogramCanvasProps {
   width: number // Fixture width in inches
   height: number // Fixture height in inches
   placements?: ProductPlacement[]
-  onPlacementChange?: (placements: ProductPlacement[]) => void
   onProductDrop?: (product: Product, x: number, y: number) => void
   gridSize?: number
   pixelsPerInch?: number
@@ -35,8 +33,6 @@ export function PlanogramCanvas({
   width,
   height,
   placements = [],
-  onPlacementChange,
-  onProductDrop,
   gridSize = 10,
   pixelsPerInch = 10,
   className,
@@ -44,8 +40,8 @@ export function PlanogramCanvas({
   showGrid = true,
   selectedProductId = null,
   onProductSelect,
+  onProductDrop,
 }: PlanogramCanvasProps) {
-  const [draggingProduct, setDraggingProduct] = React.useState<Product | null>(null)
 
   // Convert fixture dimensions to canvas pixels
   const canvasWidth = toCanvasScale(width, pixelsPerInch)
@@ -57,15 +53,11 @@ export function PlanogramCanvas({
   }
 
   // Handle product dragging
-  const handleDragStart = (product: Product) => {
-    setDraggingProduct(product)
-    onProductSelect?.(product.id)
+  const handleDragStart = () => {
+    // Drag start logic here if needed
   }
-
+  
   const handleDragEnd = (product: Product, newX: number, newY: number) => {
-    setDraggingProduct(null)
-
-    // Find valid position for the product
     const position = findNearestValidPosition(
       product,
       { x: newX, y: newY },
@@ -80,6 +72,8 @@ export function PlanogramCanvas({
     
     onProductDrop?.(product, realX, realY)
   }
+
+  // Rest of the component remains the same...
 
   return (
     <Stage 
@@ -135,7 +129,7 @@ export function PlanogramCanvas({
               width={width}
               height={height}
               draggable
-              onDragStart={() => handleDragStart(product)}
+              onDragStart={handleDragStart}
               onDragEnd={(e) => handleDragEnd(product, e.target.x(), e.target.y())}
               onClick={() => onProductSelect?.(product.id)}
             >

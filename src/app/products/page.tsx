@@ -1,355 +1,189 @@
-'use client';
-
-
+"use client";
 
 import React, { useEffect, useState } from "react";
-
-import DashboardLayout from "@/app/components/templates/DashboardLayout";
-
-import { ProductForm } from "@/app/products/forms/ProductForm";
-
-import { ProductBulkUpload } from "@/app/products/ProductBulkUpload";
-
+import Image from "next/image";
+import DashboardLayout from "@/app/components/templates/layouts/DashboardLayout";
 import productApi from "@/lib/supabase/productApi";
-
-import { Button } from "@/app/components/atoms/buttons";
-
+import { ProductForm } from "@/app/products/forms/ProductForm";
+import { ProductBulkUpload } from "@/app/products/ProductBulkUpload";
+import { Button } from "@/app/components/atoms/buttons/Button";
 import { Modal } from "@/app/components/ui/modal";
-
-import { Tab, TabList, TabPanel, TabPanels, Tabs } from "@/app/components/ui/tabs";
-
-import { Table } from "@/app/components/molecules/Table"; // Universal table component
-
+import { Tabs, TabList, Tab, TabPanels, TabPanel } from "@/app/components/ui/tabs";
+import { Table } from "@/app/components/molecules/Table";
 import BrandsPage from "@/app/products/brands/page";
-
 import CategoriesPage from "@/app/products/categories/page";
-
 import ManufacturersPage from "@/app/products/manufacturers/page";
+import UnitsPage from "@/app/products/units/page";
+import SellSheetPage from "@/app/products/SellSheets/page";
 
-import UnitsPage from "./units/page";
-
-import SellSheetPage from "./SellSheets/page";
-
-
-
-
+interface Product {
+  id: string;
+  name: string;
+  sku: string;
+  upc: string;
+  brand_name: string;
+  category_name: string;
+  base_unit_price: number;
+  msrp: number;
+  description?: string;
+  image_url?: string;
+  width?: number;
+  height?: number;
+  depth?: number;
+  current_price?: number;
+}
 
 export default function ProductsPage() {
-
-  const [products, setProducts] = useState<any[]>([]);
-
-  const [selectedProduct, setSelectedProduct] = useState<any | null>(null);
-
+  const [products, setProducts] = useState<Product[]>([]);
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [isFormOpen, setIsFormOpen] = useState(false);
-
   const [isLoading, setIsLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState(0);
 
-
-
-  // Fetch products on load
-
+  // ✅ Fetch Products on Load
   useEffect(() => {
-
     async function fetchProducts() {
-
       try {
-
         const data = await productApi.getProducts();
-
-        setProducts(data || []);
-
+        if (Array.isArray(data) && data.length > 0) {
+          setProducts(data);
+        } else {
+          setProducts([]);
+        }
       } catch (error) {
-
         console.error("Error fetching products:", error);
-
       } finally {
-
         setIsLoading(false);
-
       }
-
     }
-
-
-
     fetchProducts();
-
   }, []);
 
-
-
-  // Handle opening the form
-
+  // ✅ Handle Adding New Product
   const handleAddProduct = () => {
-
-    setSelectedProduct(null); // Clear selection for new product
-
-    setIsFormOpen(true); // Open the modal
-
+    setSelectedProduct(null);
+    setIsFormOpen(true);
   };
 
-
-
-  // Handle editing an existing product
-
-  const handleEditClick = (product: any) => {
-
-    setSelectedProduct(product); // Set the product to edit
-
-    setIsFormOpen(true); // Open the modal
-
+  // ✅ Handle Editing Product
+  const handleEditClick = (product: Product) => {
+    setSelectedProduct(product);
+    setIsFormOpen(true);
   };
 
-
-
-  // Handle form submission success
-
+  // ✅ Refresh Data After Form Submission
   const handleFormSuccess = async () => {
-
     setIsFormOpen(false);
-
     try {
-
       const data = await productApi.getProducts();
-
-      setProducts(data || []);
-
+      setProducts(data.length > 0 ? data : []);
     } catch (error) {
-
       console.error("Error refreshing products:", error);
-
     }
-
   };
-
-
 
   return (
-
     <DashboardLayout>
+      <div className="flex flex-col min-h-screen bg-background">
+        <div className="flex-1 p-6 space-y-6">
+          <div className="max-w-[2000px] mx-auto w-full">
+            <h1 className="text-2xl font-bold text-primary">Products</h1>
+            <p className="text-sm text-muted-foreground mt-2">
+              Manage your products, brands, categories, and manufacturers. Use the tabs to navigate.
+            </p>
 
-      <div className="p-6 space-y-6 bg-gray-100">
-
-        <h1 className="text-2xl font-bold text-gray-800">Products</h1>
-
-        <p className="text-gray-600">
-
-          Manage your products, brands, categories, and manufacturers. Use the tabs to navigate
-
-          between different sections.
-
-        </p>
-
-
-
-        {/* Selected Product Details */}
-
-        {selectedProduct && (
-
-          <div className="p-4 bg-white shadow-md rounded-lg flex items-center space-x-6">
-
-            <div className="w-1/3">
-
-              <img
-
-                src={selectedProduct.image_url || "/placeholder.png"}
-
-                alt={selectedProduct.name}
-
-                className="rounded-md w-full h-auto"
-
-              />
-
-            </div>
-
-            <div className="flex-1">
-
-              <h2 className="text-lg font-semibold">{selectedProduct.name}</h2>
-
-              <p>{selectedProduct.description}</p>
-
-              <p className="mt-2 text-gray-700">
-
-                <strong>Dimensions:</strong> {selectedProduct.width} x {selectedProduct.height} x {selectedProduct.depth}
-
-              </p>
-
-              <p className="text-gray-700">
-
-                <strong>Price:</strong> ${selectedProduct.current_price}
-
-              </p>
-
-              <div className="mt-4 space-x-4">
-
-                <Button>Edit Product</Button>
-
-                <Button variant="ghost">Delete Product</Button>
-
-              </div>
-
-            </div>
-
-          </div>
-
-        )}
-
-
-
-        {/* Tab Navigation */}
-
-        <Tabs defaultIndex={0}>
-
-          <TabList>
-
-            <Tab index={0} isActive={true} onClick={() => {}}>Products</Tab>
-
-            <Tab index={1} isActive={false} onClick={() => {}}>Brands</Tab>
-
-            <Tab index={2} isActive={false} onClick={() => {}}>Categories</Tab>
-
-            <Tab index={3} isActive={false} onClick={() => {}}>Manufacturers</Tab>
-
-            <Tab index={4} isActive={false} onClick={() => {}}>Units</Tab>
-
-            <Tab index={5} isActive={false} onClick={() => {}}>Sell Sheets</Tab>
-
-          </TabList>
-
-          <TabPanels>
-
-            {/* Products Tab */}
-
-            <TabPanel isActive={true}>
-
-              <div className="space-y-6">
-
-                {/* Add Product Button */}
-
-                <div className="flex items-center space-x-4">
-
-                  <Button onClick={handleAddProduct} className="bg-blue-500 text-white hover:bg-blue-600">
-
-                    Add Product
-
-                  </Button>
-
-                  <ProductBulkUpload />
-
+            {/* ✅ Product Details Section */}
+            {selectedProduct && (
+              <div className="mt-6 p-4 bg-card text-card-foreground rounded-lg shadow-lg flex items-start space-x-6">
+                <div className="relative w-24 h-24">
+                  <Image
+                    src={selectedProduct.image_url || "/placeholder.png"}
+                    alt={selectedProduct.name}
+                    className="object-cover rounded"
+                    fill
+                    sizes="(max-width: 96px) 100vw"
+                  />
                 </div>
-
-
-
-                {/* Products Table */}
-
-                <Table
-
-                  data={products}
-
-                  columns={[
-
-                    { key: "name", label: "Name" },
-
-                    { key: "sku", label: "SKU" },
-
-                    { key: "upc", label: "UPC" },
-
-                    { key: "category", label: "Category" },
-
-                    { key: "brand", label: "Brand" },
-
-                    { key: "base_price", label: "Base Price" },
-
-                    { key: "current_price", label: "Current Price" },
-
-                  ]}
-
-                  onEditClick={handleEditClick} // Pass edit handler
-
-                  searchPlaceholder="Search Products..."
-
-                />
-
+                <div className="flex-1">
+                  <h2 className="text-lg font-semibold">{selectedProduct.name}</h2>
+                  <p className="text-sm text-muted-foreground">{selectedProduct.description || "No description available."}</p>
+                  <p className="mt-2 text-sm">
+                    <strong>Dimensions:</strong> {selectedProduct.width || 0} × {selectedProduct.height || 0} × {selectedProduct.depth || 0}
+                  </p>
+                  <p className="text-sm">
+                    <strong>Price:</strong> ${selectedProduct.current_price || selectedProduct.base_unit_price}
+                  </p>
+                  <div className="mt-4 flex space-x-4">
+                    <Button variant="default" onClick={() => handleEditClick(selectedProduct)}>
+                      Edit Product
+                    </Button>
+                    <Button variant="destructive">Delete Product</Button>
+                  </div>
+                </div>
               </div>
+            )}
 
-            </TabPanel>
+            {/* ✅ Tabs Navigation */}
+            <div className="mt-6">
+              <Tabs activeIndex={activeTab} handleTabClick={setActiveTab}>
+                <TabList>
+                  <Tab>Products</Tab>
+                  <Tab>Brands</Tab>
+                  <Tab>Categories</Tab>
+                  <Tab>Manufacturers</Tab>
+                  <Tab>Units</Tab>
+                  <Tab>Sell Sheets</Tab>
+                </TabList>
 
+                <TabPanels>
+                  {/* Products Tab */}
+                  <TabPanel>
+                    <div className="flex flex-col space-y-6">
+                      <div className="flex items-center justify-between">
+                        <Button variant="default" onClick={handleAddProduct}>
+                          Add Product
+                        </Button>
+                        <ProductBulkUpload />
+                      </div>
 
+                      {/* ✅ Products Table */}
+                      <div className="bg-card rounded-lg shadow-sm overflow-hidden">
+                        <Table
+                          data={products}
+                          columns={[
+                            { key: "name", label: "Name" },
+                            { key: "sku", label: "SKU" },
+                            { key: "upc", label: "UPC" },
+                            { key: "brand_name", label: "Brand" },
+                            { key: "category_name", label: "Category" },
+                            { key: "base_unit_price", label: "Base Price" },
+                            { key: "msrp", label: "MSRP" },
+                          ]}
+                          onEditClick={(row) => handleEditClick(row as Product)}
+                          searchPlaceholder="Search Products..."
+                          isLoading={isLoading}
+                        />
+                      </div>
+                    </div>
+                  </TabPanel>
 
-            {/* Brands Tab */}
+                  {/* Other Tabs */}
+                  <TabPanel><BrandsPage /></TabPanel>
+                  <TabPanel><CategoriesPage /></TabPanel>
+                  <TabPanel><ManufacturersPage /></TabPanel>
+                  <TabPanel><UnitsPage /></TabPanel>
+                  <TabPanel><SellSheetPage /></TabPanel>
+                </TabPanels>
+              </Tabs>
+            </div>
+          </div>
+        </div>
 
-            <TabPanel isActive={false}>
-
-              <BrandsPage />
-
-            </TabPanel>
-
-
-
-            {/* Categories Tab */}
-
-            <TabPanel isActive={false}>
-
-              <CategoriesPage />
-
-            </TabPanel>
-
-
-
-            {/* Manufacturers Tab */}
-
-            <TabPanel isActive={false}>
-
-              <ManufacturersPage />
-
-            </TabPanel>
-
-
-
-            {/* Units Tab */}
-
-            <TabPanel isActive={false}>
-
-              <UnitsPage />
-
-            </TabPanel>
-
-            
-
-            {/* Sell Sheets Tab */}
-
-            <TabPanel isActive={false}>
-
-              <SellSheetPage />
-
-            </TabPanel>
-
-          </TabPanels>
-
-        </Tabs>
-
-
-
-        {/* Product Form Modal */}
-
+        {/* ✅ Product Form Modal */}
         <Modal isOpen={isFormOpen} onClose={() => setIsFormOpen(false)}>
-
-          <ProductForm
-
-            product={selectedProduct}
-
-            onSubmitSuccess={handleFormSuccess}
-
-            onCancel={() => setIsFormOpen(false)}
-
-          />
-
+          <ProductForm product={selectedProduct} onSubmitSuccess={handleFormSuccess} onCancel={() => setIsFormOpen(false)} />
         </Modal>
-
       </div>
-
     </DashboardLayout>
-
   );
-
 }

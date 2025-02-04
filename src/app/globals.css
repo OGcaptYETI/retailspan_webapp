@@ -2,53 +2,122 @@
 @tailwind components;
 @tailwind utilities;
 
+/* 
+  ================
+  LIGHT THEME
+  ================
+  Using brand orange (#F07300) as --primary
+  Using brand brown (#4B3C32) as --accent (or "secondary") 
+*/
+
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 240 10% 3.9%;
-    --card: 0 0% 100%;
-    --card-foreground: 240 10% 3.9%;
+    /* 
+      Neutral Background & Text 
+      (a very light gray background and dark text)
+    */
+    --background: 210 20% 98%;         /* near-white background (#F1F3F5) */
+    --foreground: 210 15% 15%;         /* dark gray text (#2B2F33) */
+
+    /* 
+      Cards/Popover Surfaces 
+      White or near-white for high contrast 
+    */
+    --card: 0 0% 100%;                 /* white (#FFFFFF) */
+    --card-foreground: 210 15% 15%;    /* same dark text color */
     --popover: 0 0% 100%;
-    --popover-foreground: 240 10% 3.9%;
-    --primary: 240 5.9% 10%;
-    --primary-foreground: 0 0% 98%;
-    --secondary: 240 4.8% 95.9%;
-    --secondary-foreground: 240 5.9% 10%;
-    --muted: 240 4.8% 95.9%;
-    --muted-foreground: 240 3.8% 46.1%;
-    --accent: 240 4.8% 95.9%;
-    --accent-foreground: 240 5.9% 10%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 240 5.9% 90%;
-    --input: 240 5.9% 90%;
-    --ring: 240 5.9% 10%;
+    --popover-foreground: 210 15% 15%;
+
+    /* BRAND ORANGE as Primary (#F07300) */
+    /* 
+       #F07300 in HSL is roughly hsl(24, 100%, 47%) 
+       We'll keep it vibrant. 
+    */
+    --primary: 24 100% 47%;              /* #F07300 */
+    --primary-foreground: 0 0% 100%;     /* white text on orange */
+
+    /* BRAND BROWN as Accent/Secondary (#4B3C32) */
+    /*
+       #4B3C32 is roughly hsl(27, 37%, 24%) 
+       This is a deeper, rich tone. 
+    */
+    --accent: 27 37% 24%;                /* #4B3C32 */
+    --accent-foreground: 0 0% 98%;       /* near-white text on brown */
+
+    /* 
+      Muted color for placeholders or subtle backgrounds 
+      (light grayish tone)
+    */
+    --muted: 210 12% 93%;                /* #ECEEF0 */
+    --muted-foreground: 210 8% 46%;      /* #73777B, medium gray text */
+
+    /* 
+      Destructive (error) color 
+      (we'll keep a moderate red or tweak as needed)
+    */
+    --destructive: 0 70% 55%;           /* #D9534F */
+    --destructive-foreground: 0 0% 98%; /* white text on red */
+
+    /* 
+      Basic border & input colors 
+      (soft gray so brand colors stand out)
+    */
+    --border: 210 14% 88%;              /* #D6D9DC */
+    --input: 210 14% 95%;               /* #EEF0F2 */
+
+    /* 
+      Focus ring color 
+      We'll use brand orange by default 
+      so focus states tie into brand
+    */
+    --ring: 24 100% 47%;                /* same as primary (#F07300) */
+
+    /* Border radius for consistent rounding */
     --radius: 0.5rem;
   }
 
+  /*
+    ================
+    DARK THEME
+    ================
+    We invert or darken everything. 
+    Still keep brand colors #F07300 + #4B3C32 
+    but you could darken them if you prefer.
+  */
   .dark {
-    --background: 240 10% 3.9%;
-    --foreground: 0 0% 98%;
-    --card: 240 10% 3.9%;
-    --card-foreground: 0 0% 98%;
-    --popover: 240 10% 3.9%;
-    --popover-foreground: 0 0% 98%;
-    --primary: 0 0% 98%;
-    --primary-foreground: 240 5.9% 10%;
-    --secondary: 240 3.7% 15.9%;
-    --secondary-foreground: 0 0% 98%;
-    --muted: 240 3.7% 15.9%;
-    --muted-foreground: 240 5% 64.9%;
-    --accent: 240 3.7% 15.9%;
-    --accent-foreground: 0 0% 98%;
-    --destructive: 0 62.8% 30.6%;
+    /* Darker background & lighter text */
+    --background: 210 20% 10%;           /* #1E2123, near-black w/hint of blue */
+    --foreground: 210 15% 85%;           /* #D9DCE0, light gray text */
+
+    --card: 210 20% 14%;                 /* #2A2E30, slightly lighter than background */
+    --card-foreground: 210 15% 85%;
+    --popover: 210 20% 14%;
+    --popover-foreground: 210 15% 85%;
+
+    /* BRAND ORANGE for primary */
+    --primary: 24 100% 47%;              /* #F07300 (still vibrant) */
+    --primary-foreground: 0 0% 100%;     /* white text on orange */
+
+    /* BRAND BROWN for accent/secondary */
+    --accent: 27 37% 24%;                /* #4B3C32 */
+    --accent-foreground: 0 0% 98%;       /* near-white text on brown */
+
+    --muted: 210 15% 20%;                /* #363A3D, dark muted panel */
+    --muted-foreground: 210 7% 78%;      /* #C7CACD, muted text */
+
+    /* Keep destructive as a deeper red for dark theme */
+    --destructive: 0 65% 40%;           /* #9C2F2C */
     --destructive-foreground: 0 0% 98%;
-    --border: 240 3.7% 15.9%;
-    --input: 240 3.7% 15.9%;
-    --ring: 240 4.9% 83.9%;
+
+    --border: 210 15% 28%;              /* #40464B */
+    --input: 210 15% 20%;               /* #363A3D */
+    --ring: 24 100% 47%;                /* brand orange as focus ring */
   }
 }
 
+/* 
+  Base layer for global styles 
+*/
 @layer base {
   * {
     @apply border-border;
@@ -60,6 +129,9 @@
   }
 }
 
+/* 
+  Utility layer to map design tokens -> tailwind classes 
+*/
 @layer utilities {
   .border-border {
     border-color: hsl(var(--border));
@@ -73,3 +145,4 @@
     color: hsl(var(--foreground));
   }
 }
+

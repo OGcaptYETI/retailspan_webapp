@@ -1,8 +1,8 @@
-import { createServerSupabaseClient } from '../supabase/client'
+import { createServerClient } from '../supabase/client'
 import { redirect } from 'next/navigation'
 
 export async function getSession() {
-  const supabase = createServerSupabaseClient()
+  const supabase = createServerClient()
   
   try {
     const {

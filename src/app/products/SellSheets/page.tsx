@@ -31,7 +31,6 @@ export default function SellSheetsPage() {
 
   const handleFileUpload = async () => {
     if (!selectedFile) return;
-
     try {
       const fileUrl = await productApi.uploadSellSheet(selectedFile);
       console.log("Uploaded Sell Sheet URL:", fileUrl);
@@ -43,11 +42,11 @@ export default function SellSheetsPage() {
   };
 
   return (
-    <div className="p-6 space-y-6 bg-gray-100">
-      <h1 className="text-2xl font-bold text-gray-800">Manage Sell Sheets</h1>
+    <div className="p-6 space-y-6 bg-background text-foreground">
+      <h1 className="text-2xl font-bold">Manage Sell Sheets</h1>
 
       <div className="mb-4">
-        <Button onClick={handleAddSellSheet} className="bg-blue-500 text-white hover:bg-blue-600">
+        <Button variant="default" onClick={handleAddSellSheet}>
           Add Sell Sheet
         </Button>
       </div>
@@ -63,17 +62,15 @@ export default function SellSheetsPage() {
         searchPlaceholder="Search Sell Sheets..."
       />
 
-<Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)}>
-  <SellSheetForm
-    onClose={() => setIsModalOpen(false)}
-    onSuccess={fetchSellSheets}
-    onFileSelect={(file) => setSelectedFile(file)} // ✅ Now this prop exists
-    onFileUpload={handleFileUpload} // ✅ Now this prop exists
-  />
-</Modal>
-
+      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)}>
+        <SellSheetForm
+          onClose={() => setIsModalOpen(false)}
+          onSuccess={fetchSellSheets}
+          onFileSelect={(file) => setSelectedFile(file)}
+          onFileUpload={handleFileUpload}
+        />
+      </Modal>
     </div>
   );
 }
-
 

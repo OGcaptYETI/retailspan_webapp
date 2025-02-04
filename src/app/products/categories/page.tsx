@@ -1,24 +1,27 @@
-// app/products/categories/page.tsx
-'use client';
+"use client";
 
-import React, { useEffect, useState } from 'react';
-import { Button } from '@/app/components/atoms/buttons';
-import { Modal } from '@/app/components/ui/modal';
-import { CategoryForm } from '@/app/products/forms/CategoryForm';
-import { Card } from '@/app/components/molecules/cards';
-import { 
+import React, { useEffect, useState } from "react";
+import { Button } from "@/app/components/atoms/buttons";
+import { Modal } from "@/app/components/ui/modal";
+import { CategoryForm } from "@/app/products/forms/CategoryForm";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/app/components/molecules/cards";
+import {
   Plus,
   Edit2,
   Trash2,
-  ChevronDown,
-  ChevronUp,
-  FolderPlus 
-} from 'lucide-react';
-import { IconButton } from '@/app/components/atoms/buttons';
-import { useToast } from '@/app/components/ui/use-toast';
-import productApi from '@/lib/supabase/productApi';
+  FolderPlus,
+} from "lucide-react";
+import { IconButton } from "@/app/components/atoms/buttons";
+import { useToast } from "@/app/components/ui/use-toast";
+import productApi from "@/lib/supabase/productApi";
 
-// Define our TypeScript interfaces for better type safety
+// TypeScript interface for Category
 interface Category {
   id: string;
   name: string;
@@ -30,10 +33,8 @@ interface Category {
 }
 
 export default function CategoriesPage() {
-  // Initialize the toast hook from our UI components
   const { toast } = useToast();
-  
-  // State management
+
   const [categories, setCategories] = useState<Category[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
@@ -41,27 +42,27 @@ export default function CategoriesPage() {
   const [parentCategory, setParentCategory] = useState<Category | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
-  // Helper function to organize flat category list into hierarchy
+  // Organize flat list of categories into a hierarchy
   const organizeCategories = (flatCategories: Category[]): Category[] => {
     const categoryMap = new Map<string, Category>();
     const rootCategories: Category[] = [];
 
-    // First pass: Create category objects with empty subcategories arrays
-    flatCategories.forEach(category => {
-      categoryMap.set(category.id, { ...category, subcategories: [] });
+    // Create map
+    flatCategories.forEach((cat) => {
+      categoryMap.set(cat.id, { ...cat, subcategories: [] });
     });
 
-    // Second pass: Build the hierarchy
-    flatCategories.forEach(category => {
-      const categoryWithSubs = categoryMap.get(category.id);
-      if (categoryWithSubs) {
-        if (category.parent_id) {
-          const parent = categoryMap.get(category.parent_id);
+    // Build hierarchy
+    flatCategories.forEach((cat) => {
+      const catWithSubs = categoryMap.get(cat.id);
+      if (catWithSubs) {
+        if (cat.parent_id) {
+          const parent = categoryMap.get(cat.parent_id);
           if (parent && parent.subcategories) {
-            parent.subcategories.push(categoryWithSubs);
+            parent.subcategories.push(catWithSubs);
           }
         } else {
-          rootCategories.push(categoryWithSubs);
+          rootCategories.push(catWithSubs);
         }
       }
     });
@@ -69,17 +70,18 @@ export default function CategoriesPage() {
     return rootCategories;
   };
 
-  // Fetch categories on mount and after updates
+  // Fetch categories from supabase
   const fetchCategories = async () => {
     try {
       setIsLoading(true);
       const data = await productApi.getProductCategories();
-      const organizedCategories = organizeCategories(data || []);
-      setCategories(organizedCategories);
+      const organized = organizeCategories(data || []);
+      setCategories(organized);
     } catch (error) {
       toast({
         title: "Error fetching categories",
-        description: error instanceof Error ? error.message : "Failed to load categories",
+        description:
+          error instanceof Error ? error.message : "Failed to load categories",
         className: "bg-destructive text-destructive-foreground",
         duration: 5000,
       });
@@ -92,7 +94,7 @@ export default function CategoriesPage() {
     fetchCategories();
   }, []);
 
-  // Handle adding a new category or subcategory
+  // Add new category or subcategory
   const handleAddCategory = (parent?: Category) => {
     setEditingCategory(null);
     setParentCategory(parent || null);
@@ -100,7 +102,7 @@ export default function CategoriesPage() {
     setIsModalOpen(true);
   };
 
-  // Handle editing an existing category
+  // Edit an existing category
   const handleEditCategory = (category: Category) => {
     setEditingCategory(category);
     setIsAddingSubcategory(false);
@@ -108,15 +110,16 @@ export default function CategoriesPage() {
     setIsModalOpen(true);
   };
 
-  // Handle deleting a category with dependency checks
+  // Delete a category after checking dependencies
   const handleDeleteCategory = async (categoryId: string) => {
     try {
       const deps = await productApi.getCategoryDependencies(categoryId);
-      
+
       if (deps.hasProducts || deps.hasSubcategories) {
         toast({
           title: "Cannot delete category",
-          description: "This category has products or subcategories that must be reassigned first.",
+          description:
+            "This category has products or subcategories that must be reassigned first.",
           className: "bg-destructive text-destructive-foreground",
           duration: 5000,
         });
@@ -125,7 +128,7 @@ export default function CategoriesPage() {
 
       await productApi.deleteProductCategory(categoryId);
       await fetchCategories();
-      
+
       toast({
         title: "Success",
         description: "Category has been deleted successfully",
@@ -133,17 +136,18 @@ export default function CategoriesPage() {
     } catch (error) {
       toast({
         title: "Error",
-        description: error instanceof Error ? error.message : "Failed to delete category",
+        description:
+          error instanceof Error ? error.message : "Failed to delete category",
         variant: "destructive",
       });
     }
   };
 
-  // Handle saving a category (create or update)
+  // Create or update a category
   const handleSaveCategory = async (categoryData: Partial<Category>) => {
     try {
       setIsLoading(true);
-      
+
       if (editingCategory?.id) {
         await productApi.updateProductCategory(editingCategory.id, categoryData);
         toast({
@@ -167,7 +171,8 @@ export default function CategoriesPage() {
     } catch (error) {
       toast({
         title: "Error",
-        description: error instanceof Error ? error.message : "Failed to save category",
+        description:
+          error instanceof Error ? error.message : "Failed to save category",
         variant: "destructive",
       });
     } finally {
@@ -175,16 +180,20 @@ export default function CategoriesPage() {
     }
   };
 
-  // Render a category card with its subcategories
+  // Recursively render category cards
   const renderCategoryCard = (category: Category) => (
-    <Card key={category.id} className="mb-4 bg-gray-900 text-white">
+    <Card key={category.id} className="mb-4">
       <div className="p-4">
         <div className="flex justify-between items-center">
           <div>
-            <h3 className="text-xl font-bold">{category.name}</h3>
-            <p className="text-gray-400">{category.description}</p>
+            <h3 className="text-xl font-bold text-foreground">{category.name}</h3>
+            {category.description && (
+              <p className="text-sm text-muted-foreground">
+                {category.description}
+              </p>
+            )}
           </div>
-          
+
           <div className="flex items-center gap-2">
             <IconButton
               icon={<FolderPlus className="h-4 w-4" />}
@@ -193,7 +202,7 @@ export default function CategoriesPage() {
               onClick={() => handleAddCategory(category)}
               disabled={isLoading}
             />
-            
+
             <IconButton
               icon={<Edit2 className="h-4 w-4" />}
               label="Edit Category"
@@ -201,7 +210,7 @@ export default function CategoriesPage() {
               onClick={() => handleEditCategory(category)}
               disabled={isLoading}
             />
-            
+
             <IconButton
               icon={<Trash2 className="h-4 w-4" />}
               label="Delete Category"
@@ -211,9 +220,9 @@ export default function CategoriesPage() {
             />
           </div>
         </div>
-        
+
         {category.subcategories && category.subcategories.length > 0 && (
-          <div className="mt-4 ml-6 border-l-2 border-gray-700 pl-4">
+          <div className="mt-4 ml-6 border-l border-border pl-4">
             {category.subcategories.map(renderCategoryCard)}
           </div>
         )}
@@ -222,28 +231,25 @@ export default function CategoriesPage() {
   );
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-6 space-y-6 bg-background text-foreground">
       <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold text-black">Product Categories</h1>
-        <Button
-          onClick={() => handleAddCategory()}
-          variant="default"
-          disabled={isLoading}
-        >
+        <h1 className="text-2xl font-bold">Product Categories</h1>
+        <Button onClick={() => handleAddCategory()} variant="default" disabled={isLoading}>
           Add Top-Level Category
         </Button>
       </div>
 
       <div className="space-y-4">
         {isLoading ? (
-          <div className="text-center text-gray-500">Loading categories...</div>
+          <div className="text-center text-muted-foreground">Loading categories...</div>
         ) : categories.length === 0 ? (
-          <div className="text-center text-gray-500">No categories found</div>
+          <div className="text-center text-muted-foreground">No categories found</div>
         ) : (
           categories.map(renderCategoryCard)
         )}
       </div>
 
+      {/* Modal for add/edit category */}
       <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)}>
         <CategoryForm
           category={editingCategory}
@@ -257,4 +263,3 @@ export default function CategoriesPage() {
     </div>
   );
 }
-

@@ -60,26 +60,25 @@ export default function ManufacturersPage() {
   };
 
   return (
-    <div className="p-6 space-y-6 bg-gray-100">
-      <h1 className="text-2xl font-bold text-gray-800">Manage Manufacturers</h1>
+    <div className="p-6 space-y-6 bg-background text-foreground">
+      <h1 className="text-2xl font-bold">Manage Manufacturers</h1>
 
       <div className="mb-4">
-        <Button onClick={handleAddManufacturer} className="bg-blue-500 text-white hover:bg-blue-600">
+        <Button variant="default" onClick={handleAddManufacturer}>
           Add Manufacturer
         </Button>
       </div>
 
       <Table
-  data={manufacturers}
-  columns={[
-    { key: "name", label: "Name" },
-    { key: "website", label: "Website" },
-  ]}
-  onEditClick={handleEditClick}
-  onDeleteClick={handleDeleteManufacturer} // ✅ Now it exists in TableProps
-  searchPlaceholder="Search Manufacturers..."
-/>
-
+        data={manufacturers}
+        columns={[
+          { key: "name", label: "Name" },
+          { key: "website", label: "Website" },
+        ]}
+        onEditClick={handleEditClick}
+        onDeleteClick={handleDeleteManufacturer}
+        searchPlaceholder="Search Manufacturers..."
+      />
 
       <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)}>
         <ManufacturerForm
@@ -91,5 +90,4 @@ export default function ManufacturersPage() {
     </div>
   );
 }
-
 
