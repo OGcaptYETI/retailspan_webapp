@@ -1,118 +1,166 @@
 import React, { useState, useEffect } from "react";
+import Image from "next/image";
+import { toast } from "react-hot-toast";
 import productApi from "@/lib/supabase/productApi";
 import { Text, Heading } from "@/app/components/atoms/typography";
 import { Button } from "@/app/components/atoms/buttons";
 import { Input } from "@/app/components/atoms/inputs";
 import { Select } from "@/app/components/atoms/inputs/select";
-import { supabase } from "@/lib/supabase/client";
 
-export interface ProductFormProps {
-  product?: any;
-  onSubmitSuccess?: () => void;
-  onCancel?: () => void;
+interface Category {
+  id: string;
+  name: string;
 }
 
-export function ProductForm({ product, onSubmitSuccess, onCancel }: ProductFormProps) {
-  const [formData, setFormData] = useState({
-    name: product?.name || "",
-    sku: product?.sku || "",
-    upc: product?.upc || "",
-    description: product?.description || "",
-    category_id: product?.category_id || "", 
-    brand_id: product?.brand_id || "",  
-    unit_measure_id: product?.unit_measure_id || "",  
-    base_unit_price: product?.base_unit_price || "",
-    wholesale_price: product?.wholesale_price || "",
-    msrp: product?.msrp || "",
-    weight: product?.weight || "",
-    width: product?.width || "",
-    height: product?.height || "",
-    depth: product?.depth || "",
-    is_active: product?.is_active ?? true,
-    image_url: product?.image_url || "",
+interface Brand {
+  id: string;
+  name: string;
+}
+
+interface Product {
+  id?: string;
+  name: string;
+  sku: string;
+  upc?: string;
+  description?: string;
+  category_id?: string;
+  brand_id?: string;
+  unit_measure_id?: string;
+  base_unit_price?: number;
+  wholesale_price?: number;
+  msrp?: number;
+  weight?: number;
+  width?: number;
+  height?: number;
+  depth?: number;
+  pack_size?: string;
+  is_active: boolean;
+  image_url?: string;
+}
+
+export interface ProductFormProps {
+  onSubmit?: (productData: Product) => Promise<void>;
+  onCancel?: () => void;
+  product?: Product;
+  isOpen: boolean;
+  onClose: () => void;
+  onSubmitSuccess?: () => void;
+}
+
+export function ProductForm({ product, isOpen, onClose, onSubmitSuccess }: ProductFormProps) {
+  const [formData, setFormData] = useState<Product>({
+    name: "",
+    sku: "",
+    upc: "",
+    description: "",
+    category_id: "",
+    brand_id: "",
+    unit_measure_id: "",
+    base_unit_price: 0,
+    wholesale_price: 0,
+    msrp: 0,
+    weight: 0,
+    width: 0,
+    height: 0,
+    depth: 0,
+    pack_size: "1",
+    is_active: true,
+    image_url: "",
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [categories, setCategories] = useState<any[]>([]);
-  const [brands, setBrands] = useState<any[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [brands, setBrands] = useState<Brand[]>([]);
   const [units, setUnits] = useState<any[]>([]);
-  const [previewImage, setPreviewImage] = useState<string | null>(formData.image_url);
+  const [previewImage, setPreviewImage] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
-  // Fetch Data Optimized with Promise.all()
+  useEffect(() => {
+    console.log('Modal isOpen state:', isOpen); // Debug log
+    
+    if (product) {
+      setFormData({
+        ...product,
+        base_unit_price: product.base_unit_price || 0,
+        wholesale_price: product.wholesale_price || 0,
+        msrp: product.msrp || 0,
+        weight: product.weight || 0,
+        width: product.width || 0,
+        height: product.height || 0,
+        depth: product.depth || 0,
+        pack_size: product.pack_size || "1",
+      });
+      setPreviewImage(product.image_url || null);
+    } else {
+      setFormData({
+        name: "",
+        sku: "",
+        upc: "",
+        description: "",
+        category_id: "",
+        brand_id: "",
+        unit_measure_id: "",
+        base_unit_price: 0,
+        wholesale_price: 0,
+        msrp: 0,
+        weight: 0,
+        width: 0,
+        height: 0,
+        depth: 0,
+        pack_size: "1",
+        image_url: "",
+        is_active: true,
+      });
+      setPreviewImage(null);
+    }
+  }, [product, isOpen]);
+
   useEffect(() => {
     const fetchData = async () => {
       try {
         const [categoryRes, brandRes, unitRes] = await Promise.all([
-          supabase.from("product_categories").select("*"), 
-          supabase.from("brands").select("*"),
-          supabase.from("units").select("*"),
+          productApi.getProductCategories(),
+          productApi.getBrands(),
+          productApi.getUnitMeasures(),
         ]);
 
-        setCategories(categoryRes.data || []);
-        setBrands(brandRes.data || []);
-        setUnits(unitRes.data || []);
-      } catch (error) {
-        console.error("Error fetching form data:", error);
+        setCategories(categoryRes || []);
+        setBrands(brandRes || []);
+        setUnits(unitRes || []);
+      } catch (err) {
+        setError("Failed to load form data");
+        toast.error("Failed to load form data.");
+        console.error("Error fetching form data:", err);
       }
     };
 
-    fetchData();
-  }, []);
+    if (isOpen) {
+      fetchData();
+    }
+  }, [isOpen]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target;
-    setFormData({ ...formData, [name]: type === "checkbox" ? (e.target as HTMLInputElement).checked : value });
+    setFormData((prevData) => ({
+      ...prevData,
+      [name]: type === "checkbox" ? (e.target as HTMLInputElement).checked : value,
+    }));
   };
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files) return;
     const file = e.target.files[0];
-  
-    if (!file) {
-      console.error("No file selected.");
-      return;
-    }
-  
-    const { data: user, error: authError } = await supabase.auth.getUser();
-    if (authError || !user) {
-      console.error("User authentication failed:", authError);
-      alert("You need to be logged in to upload images.");
-      return;
-    }
-  
-    const uniqueFileName = `images/${Date.now()}-${file.name}`;
-  
+
     try {
-      const { data, error } = await supabase.storage
-        .from("product_images")
-        .upload(uniqueFileName, file, {
-          cacheControl: "3600",
-          upsert: true,
-        });
-  
-      if (error) {
-        console.error("Image upload failed:", error);
-        return;
-      }
-  
-      const { data: urlData } = supabase.storage
-        .from("product_images")
-        .getPublicUrl(uniqueFileName);
-  
-      if (!urlData.publicUrl) {
-        console.error("Failed to retrieve image URL.");
-        return;
-      }
-  
-      setPreviewImage(urlData.publicUrl);
-      setFormData({ ...formData, image_url: urlData.publicUrl });
+      const imageUrl = await productApi.uploadProductImage(file);
+      setPreviewImage(imageUrl);
+      setFormData((prevData) => ({ ...prevData, image_url: imageUrl }));
+      toast.success("Image uploaded successfully!");
     } catch (err) {
-      console.error("Unexpected error during image upload:", err);
+      toast.error("Image upload failed.");
+      console.error("Error uploading image:", err);
     }
   };
-  
-  
-  
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -126,64 +174,129 @@ export function ProductForm({ product, onSubmitSuccess, onCancel }: ProductFormP
         unit_measure_id: formData.unit_measure_id || null,
       };
 
-      if (product) {
+      if (product?.id) {
         await productApi.updateProduct(product.id, cleanedData);
+        toast.success("Product updated successfully!");
       } else {
         await productApi.createProduct(cleanedData);
+        toast.success("Product created successfully!");
       }
 
       onSubmitSuccess?.();
-    } catch (error) {
-      console.error("Error submitting form:", error);
+      onClose();
+    } catch (err) {
+      toast.error("Failed to save product.");
+      console.error("Error submitting form:", err);
     } finally {
       setIsSubmitting(false);
     }
   };
 
+  if (error) {
+    return (
+      <div className="p-6">
+        <Text className="text-center text-red-500">{error}</Text>
+      </div>
+    );
+  }
+
   return (
-    <form onSubmit={handleSubmit} className="space-y-6 p-4">
-      <Heading level={3}>{product ? "Edit Product" : "Create New Product"}</Heading>
+      <form onSubmit={handleSubmit} className="space-y-6 p-6">
+        <Heading level={3} className="text-center mb-6">
+          {product ? "Edit Product" : "Create New Product"}
+        </Heading>
 
-      {/* IMAGE UPLOAD */}
-      <div className="flex items-center space-x-4">
-        <div className="w-24 h-24 border border-gray-300 rounded-lg overflow-hidden">
-          {previewImage ? (
-            <img src={previewImage} alt="Product" className="object-cover w-full h-full" />
-          ) : (
-            <div className="text-center text-gray-500 p-4">No Image</div>
-          )}
+        <div className="flex items-center space-x-6">
+          <div className="w-32 h-32 border border-gray-300 rounded-lg overflow-hidden">
+            {previewImage ? (
+              <Image src={previewImage} alt="Product" width={128} height={128} className="object-cover w-full h-full" />
+            ) : (
+              <div className="flex items-center justify-center h-full text-gray-500">
+                No Image
+              </div>
+            )}
+          </div>
+          <div>
+            <label className="block text-gray-700 font-semibold mb-2">Upload Product Image</label>
+            <input 
+              type="file" 
+              accept="image/*" 
+              onChange={handleImageUpload}
+              title="Upload product image"
+              placeholder="Choose a file"
+              className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+            />
+          </div>
         </div>
-        <div>
-          <label className="block text-gray-700">Upload Product Image</label>
-          <input type="file" accept="image/*" onChange={handleImageUpload} className="mt-1" title="Upload Product Image" />
+
+        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          <Input 
+            label="Product Name" 
+            name="name" 
+            value={formData.name} 
+            onChange={handleInputChange} 
+            required 
+          />
+          <Input 
+            label="SKU" 
+            name="sku" 
+            value={formData.sku} 
+            onChange={handleInputChange} 
+            required 
+          />
+          <Select 
+            label="Category" 
+            name="category_id" 
+            value={formData.category_id} 
+            options={categories.map(cat => ({ 
+              value: cat.id, 
+              label: cat.name 
+            }))} 
+            onChange={handleInputChange} 
+          />
+          <Select 
+            label="Brand" 
+            name="brand_id" 
+            value={formData.brand_id} 
+            options={brands.map(brand => ({ 
+              value: brand.id, 
+              label: brand.name 
+            }))} 
+            onChange={handleInputChange} 
+          />
+          <Select 
+            label="Unit of Measure" 
+            name="unit_measure_id" 
+            value={formData.unit_measure_id} 
+            options={units.map(unit => ({ 
+              value: unit.id, 
+              label: unit.name 
+            }))} 
+            onChange={handleInputChange} 
+          />
         </div>
-      </div>
 
-      {/* PRODUCT DETAILS */}
-      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-        <Input label="Product Name" name="name" value={formData.name} onChange={handleInputChange} required />
-        <Input label="SKU" name="sku" value={formData.sku} onChange={handleInputChange} required />
-        <Input label="UPC" name="upc" value={formData.upc} onChange={handleInputChange} />
-
-        <Select label="Category" name="category_id" value={formData.category_id} options={categories.map((cat) => ({ value: cat.id, label: cat.name }))} onChange={handleInputChange} />
-        <Select label="Brand" name="brand_id" value={formData.brand_id} options={brands.map((brand) => ({ value: brand.id, label: brand.name }))} onChange={handleInputChange} />
-        <Select label="Unit Measure" name="unit_measure_id" value={formData.unit_measure_id} options={units.map((unit) => ({ value: unit.id, label: unit.name }))} onChange={handleInputChange} />
-
-        <Input label="Base Unit Price ($)" name="base_unit_price" value={formData.base_unit_price} onChange={handleInputChange} type="number" />
-      </div>
-
-      <label className="flex items-center">
-        <input type="checkbox" name="is_active" checked={formData.is_active} onChange={handleInputChange} className="mr-2" />
-        <Text>Active</Text>
-      </label>
-
-      <div className="flex space-x-4">
-        <Button type="submit" disabled={isSubmitting}>{isSubmitting ? "Saving..." : product ? "Update" : "Create Product"}</Button>
-        <Button type="button" variant="secondary" onClick={onCancel}>Cancel</Button>
-      </div>
-    </form>
+        <div className="flex justify-center space-x-4 mt-8">
+          <Button 
+            type="submit" 
+            disabled={isSubmitting}
+            className="min-w-[120px]"
+          >
+            {isSubmitting ? "Saving..." : (product ? "Update" : "Create Product")}
+          </Button>
+          <Button 
+            type="button" 
+            variant="secondary" 
+            onClick={onClose}
+            className="min-w-[120px]"
+          >
+            Cancel
+          </Button>
+        </div>
+      </form>
   );
 }
+
 
 
 

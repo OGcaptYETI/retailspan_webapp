@@ -1,168 +1,164 @@
+// /app/products/brands/page.tsx
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { Table } from "@/app/components/molecules/Table"; // Universal table component
+import { Table } from "@/app/components/molecules/Table";
 import { Button } from "@/app/components/atoms/buttons";
-import { Modal } from "@/app/components/ui/modal";
 import productApi from "@/lib/supabase/productApi";
-import { BrandForm } from "@/app/products/forms/BrandForm";
-import { BrandFamilyForm } from "@/app/products/forms/BrandFamilyForm";
+import { BrandModal } from "./BrandModal";
+import { BrandFamilyModal } from "./BrandFamilyModal";
+import { toast } from "react-hot-toast";
 
 export default function BrandsPage() {
+  // State Management
   const [brands, setBrands] = useState<any[]>([]);
   const [brandFamilies, setBrandFamilies] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  
+  // Modal States
   const [isBrandModalOpen, setIsBrandModalOpen] = useState(false);
   const [isFamilyModalOpen, setIsFamilyModalOpen] = useState(false);
-  const [editingBrand, setEditingBrand] = useState<any | null>(null);
-  const [editingFamily, setEditingFamily] = useState<any | null>(null);
+  const [selectedBrand, setSelectedBrand] = useState<any | null>(null);
+  const [selectedFamily, setSelectedFamily] = useState<any | null>(null);
 
-  // Fetch brands and brand families on mount
+  // Data Fetching
   useEffect(() => {
-    fetchBrands();
-    fetchBrandFamilies();
+    fetchData();
   }, []);
 
-  const fetchBrands = async () => {
+  const fetchData = async () => {
+    setIsLoading(true);
     try {
-      const data = await productApi.getBrands();
-      console.log("🔍 Fetching brands:", data); // Debugging Log
-      setBrands(data || []);
+      const [brandsData, familiesData] = await Promise.all([
+        productApi.getBrands(),
+        productApi.getBrandFamiliesWithBrandNames()
+      ]);
+      
+      setBrands(brandsData || []);
+      setBrandFamilies(familiesData || []);
     } catch (error) {
-      console.error("Error fetching brands:", error);
+      console.error("Error fetching data:", error);
+      toast.error("Failed to load data");
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  const fetchBrandFamilies = async () => {
-    try {
-      const families = await productApi.getBrandFamiliesWithBrandNames();
-      setBrandFamilies(families || []);
-    } catch (error) {
-      console.error("Error fetching brand families:", error);
-    }
-  };
-
+  // Brand Handlers
   const handleAddBrand = () => {
-    setEditingBrand(null);
+    setSelectedBrand(null);
     setIsBrandModalOpen(true);
-  };
-
-  const handleAddBrandFamily = () => {
-    setEditingFamily(null);
-    setIsFamilyModalOpen(true);
   };
 
   const handleEditBrand = (brand: any) => {
-    setEditingBrand(brand);
+    setSelectedBrand(brand);
     setIsBrandModalOpen(true);
   };
 
-  const handleEditBrandFamily = (family: any) => {
-    setEditingFamily(family);
-    setIsFamilyModalOpen(true);
-  };
-
-  const handleSaveBrand = async (brand: any) => {
+  const handleSaveBrand = async (brandData: any) => {
     try {
-      if (brand.id) {
-        // Update existing brand
-        const [error] = await productApi.updateBrand(brand.id, brand);
-        if (error) throw error;
+      if (brandData.id) {
+        await productApi.updateBrand(brandData.id, brandData);
+        toast.success("Brand updated successfully");
       } else {
-        // Create new brand
-        const [error] = await productApi.createBrand(brand);
-        if (error) {
-          alert(error.message || "Failed to create brand");
-          return;
-        }
+        await productApi.createBrand(brandData);
+        toast.success("Brand created successfully");
       }
-      console.log("✅ Brand saved, refreshing list...");
-      await fetchBrands();
+      await fetchData();
     } catch (error) {
-      console.error("❌ Error saving brand:", error);
-      alert(error instanceof Error ? error.message : "Unknown error");
-    } finally {
-      setIsBrandModalOpen(false);
+      console.error("Error saving brand:", error);
+      toast.error("Failed to save brand");
     }
   };
 
-  const handleSaveBrandFamily = async (family: any) => {
+  // Brand Family Handlers
+  const handleAddFamily = () => {
+    setSelectedFamily(null);
+    setIsFamilyModalOpen(true);
+  };
+
+  const handleEditFamily = (family: any) => {
+    setSelectedFamily(family);
+    setIsFamilyModalOpen(true);
+  };
+
+  const handleSaveFamily = async (familyData: any) => {
     try {
-      if (family.id) {
-        // Update existing brand family
-        await productApi.updateBrandFamily(family.id, family);
+      if (familyData.id) {
+        await productApi.updateBrandFamily(familyData.id, familyData);
+        toast.success("Brand family updated successfully");
       } else {
-        // Create new brand family
-        await productApi.createBrandFamily(family);
+        await productApi.createBrandFamily(familyData);
+        toast.success("Brand family created successfully");
       }
-      await fetchBrandFamilies();
+      await fetchData();
     } catch (error) {
       console.error("Error saving brand family:", error);
-    } finally {
-      setIsFamilyModalOpen(false);
+      toast.error("Failed to save brand family");
     }
   };
 
   return (
-    <div className="p-6 space-y-6 bg-background text-foreground">
-      <h1 className="text-2xl font-bold">Manage Brands and Brand Families</h1>
-
-      {/* Add Buttons */}
-      <div className="flex space-x-4 mb-4">
-        <Button variant="default" onClick={handleAddBrand}>
-          Add Brand
-        </Button>
-        <Button variant="secondary" onClick={handleAddBrandFamily}>
-          Add Brand Family
-        </Button>
+    <div className="p-6 space-y-6">
+      <div className="flex justify-between items-center">
+        <h1 className="text-2xl font-bold">Brands</h1>
+        <div className="space-x-4">
+          <Button onClick={handleAddBrand}>Add Brand</Button>
+          <Button variant="secondary" onClick={handleAddFamily}>
+            Add Brand Family
+          </Button>
+        </div>
       </div>
 
       {/* Brands Table */}
-      <Table
-        data={brands}
-        columns={[
-          { key: "name", label: "Brand Name" },
-          { key: "manufacturer", label: "Manufacturer" },
-          { key: "website", label: "Website" },
-        ]}
-        searchPlaceholder="Search Brands..."
-        onEditClick={handleEditBrand}
-      />
+      <div className="space-y-2">
+        <h2 className="text-lg font-semibold">Brand List</h2>
+        <Table
+          data={brands}
+          columns={[
+            { key: "name", label: "Brand Name" },
+            { key: "manufacturer", label: "Manufacturer" },
+            { key: "website", label: "Website" },
+          ]}
+          searchPlaceholder="Search brands..."
+          onEditClick={handleEditBrand}
+          isLoading={isLoading}
+        />
+      </div>
 
       {/* Brand Families Table */}
-      <Table
-        data={brandFamilies.map((family) => ({
-          ...family,
-          brand_name: family.brands?.name || "N/A",
-        }))}
-        columns={[
-          { key: "name", label: "Brand Family Name" },
-          { key: "brand_name", label: "Parent Brand" },
-          { key: "description", label: "Description" },
-        ]}
-        searchPlaceholder="Search Brand Families..."
-        onEditClick={handleEditBrandFamily}
+      <div className="space-y-2">
+        <h2 className="text-lg font-semibold">Brand Families</h2>
+        <Table
+          data={brandFamilies}
+          columns={[
+            { key: "name", label: "Family Name" },
+            { key: "brand_name", label: "Parent Brand" },
+            { key: "description", label: "Description" },
+          ]}
+          searchPlaceholder="Search brand families..."
+          onEditClick={handleEditFamily}
+          isLoading={isLoading}
+        />
+      </div>
+
+      {/* Modals */}
+      <BrandModal
+        isOpen={isBrandModalOpen}
+        onClose={() => setIsBrandModalOpen(false)}
+        brand={selectedBrand}
+        onSave={handleSaveBrand}
       />
 
-      {/* Brand Modal */}
-      <Modal isOpen={isBrandModalOpen} onClose={() => setIsBrandModalOpen(false)}>
-        <BrandForm
-          brand={editingBrand}
-          onSave={handleSaveBrand}
-          onCancel={() => setIsBrandModalOpen(false)}
-        />
-      </Modal>
-
-      {/* Brand Family Modal */}
-      <Modal isOpen={isFamilyModalOpen} onClose={() => setIsFamilyModalOpen(false)}>
-        <BrandFamilyForm
-          brandFamily={editingFamily}
-          onSave={handleSaveBrandFamily}
-          onCancel={() => setIsFamilyModalOpen(false)}
-        />
-      </Modal>
+      <BrandFamilyModal
+        isOpen={isFamilyModalOpen}
+        onClose={() => setIsFamilyModalOpen(false)}
+        brandFamily={selectedFamily}
+        onSave={handleSaveFamily}
+        brands={brands}
+      />
     </div>
   );
 }
-
 
 

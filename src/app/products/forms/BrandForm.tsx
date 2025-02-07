@@ -1,9 +1,12 @@
-'use client';
+// /app/products/forms/BrandForm.tsx
+"use client";
 
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/app/components/atoms/buttons';
 import { Input } from '@/app/components/atoms/inputs';
+import { Select } from '@/app/components/atoms/inputs/SelectOptions';
 import { supabase } from '@/lib/supabase/client';
+import { toast } from 'react-hot-toast';
 
 interface BrandFormProps {
   brand?: {
@@ -12,76 +15,116 @@ interface BrandFormProps {
     manufacturer_id?: string;
     website?: string;
   };
-  onSave: (brand: { id?: string; name: string; manufacturer_id: string; website?: string }) => void;
+  onSave: (brand: {
+    id?: string;
+    name: string;
+    manufacturer_id: string;
+    website?: string;
+  }) => void;
   onCancel: () => void;
 }
 
-export const BrandForm: React.FC<BrandFormProps> = ({ brand, onSave, onCancel }) => {
+export function BrandForm({ brand, onSave, onCancel }: BrandFormProps) {
   const [formData, setFormData] = useState({
+    id: brand?.id || undefined,
     name: brand?.name || '',
     manufacturer_id: brand?.manufacturer_id || '',
     website: brand?.website || '',
   });
+  
   const [manufacturers, setManufacturers] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
-    async function fetchManufacturers() {
-      const { data, error } = await supabase.from('manufacturers').select('id, name');
-      if (error) console.error('Error fetching manufacturers:', error);
-      else setManufacturers(data || []);
-    }
     fetchManufacturers();
   }, []);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+  const fetchManufacturers = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('manufacturers')
+        .select('id, name')
+        .order('name');
+        
+      if (error) throw error;
+      setManufacturers(data || []);
+    } catch (error) {
+      console.error('Error fetching manufacturers:', error);
+      toast.error('Failed to load manufacturers');
+    }
   };
 
-  const handleSubmit = () => {
-    if (formData.name && formData.manufacturer_id) {
-      onSave(formData);
-    } else {
-      alert('Please fill out all required fields.');
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+
+    try {
+      if (!formData.name || !formData.manufacturer_id) {
+        throw new Error('Please fill out all required fields');
+      }
+
+      await onSave(formData);
+    } catch (error) {
+      console.error('Error saving brand:', error);
+      toast.error(error instanceof Error ? error.message : 'Failed to save brand');
+    } finally {
+      setIsLoading(false);
     }
   };
 
   return (
-    <div className="space-y-4">
-      <h2 className="text-lg font-semibold text-cyan-400">
-        {brand ? 'Edit Brand' : 'Add New Brand'}
-      </h2>
+    <form onSubmit={handleSubmit} className="space-y-4">
+      <Input
+        label="Brand Name"
+        name="name"
+        value={formData.name}
+        onChange={handleChange}
+        required
+      />
 
-      <Input label="Brand Name" name="name" value={formData.name} onChange={handleChange} required />
+      <Select
+        label="Manufacturer"
+        name="manufacturer_id"
+        value={formData.manufacturer_id}
+        onChange={handleChange}
+        required
+        options={manufacturers.map(m => ({
+          value: m.id,
+          label: m.name
+        }))}
+        placeholder="Select Manufacturer"
+      />
 
-      <label htmlFor="manufacturer-select" className="block text-sm font-medium text-gray-700">
-  Manufacturer
-</label>
-<select
-  id="manufacturer-select"
-  name="manufacturer_id"
-  value={formData.manufacturer_id}
-  onChange={handleChange}
-  className="border rounded p-2 w-full"
-  required
->
-  <option value="">Select Manufacturer</option>
-  {manufacturers.map((m) => (
-    <option key={m.id} value={m.id}>
-      {m.name}
-    </option>
-  ))}
-</select>
+      <Input
+        label="Website"
+        name="website"
+        value={formData.website}
+        onChange={handleChange}
+        type="url"
+        placeholder="https://example.com"
+      />
 
-      <Input label="Website" name="website" value={formData.website} onChange={handleChange} />
-
-      <div className="flex justify-end space-x-4">
-        <Button variant="secondary" onClick={onCancel}>
+      <div className="flex justify-end space-x-3 pt-4">
+        <Button
+          type="button"
+          variant="outline"
+          onClick={onCancel}
+          disabled={isLoading}
+        >
           Cancel
         </Button>
-        <Button variant="default" onClick={handleSubmit}>
-          Save
+        <Button
+          type="submit"
+          disabled={isLoading}
+        >
+          {isLoading ? 'Saving...' : (brand ? 'Update Brand' : 'Create Brand')}
         </Button>
       </div>
-    </div>
+    </form>
   );
-};
+}

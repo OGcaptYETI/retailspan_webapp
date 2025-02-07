@@ -13,30 +13,39 @@ import { Button } from "@/app/components/atoms/buttons"
 import { Text } from "@/app/components/atoms/typography"
 import { cn } from "@/lib/utils/cn"
 
-export interface ProductCardProps {
+interface ProductCardProps {
   product: {
-    id: string
-    name: string
-    description?: string | null
-    brand: string
-    category: string
-    price: number
-    imageUrl?: string | null
-    dimensions: {
-      width: number
-      height: number
-      depth: number
-    }
-  }
-  onSelect?: (product: ProductCardProps['product']) => void
-  className?: string
+    id: string;
+    name: string;
+    imageUrl?: string;
+    brand?: string;
+    description?: string;
+    category?: string;
+    price?: number;
+    dimensions?: {
+      width?: number;
+      height?: number;
+      depth?: number;
+    };
+  };
+  onSelect?: (product: ProductCardProps['product']) => void;
 }
 
-export function ProductCard({ product, onSelect, className }: ProductCardProps) {
+export function ProductCard({ product, onSelect }: ProductCardProps) {
+  const formatPrice = (price?: number) => {
+    return price ? `$${price.toFixed(2)}` : 'N/A';
+  };
+
+  const getDimensions = () => {
+    if (!product.dimensions) return null;
+    const { width = 0, height = 0, depth = 0 } = product.dimensions;
+    return `${width}" × ${height}" × ${depth}"`;
+  };
+
   return (
-    <Card className={cn("overflow-hidden", className)}>
+    <Card className="overflow-hidden">
       {product.imageUrl && (
-        <div className="relative h-48 w-full">
+        <div className="relative w-full pt-[100%]">
           <Image
             src={product.imageUrl}
             alt={product.name}
@@ -48,7 +57,7 @@ export function ProductCard({ product, onSelect, className }: ProductCardProps) 
       
       <CardHeader>
         <CardTitle>{product.name}</CardTitle>
-        <CardDescription>{product.brand}</CardDescription>
+        {product.brand && <CardDescription>{product.brand}</CardDescription>}
       </CardHeader>
       
       <CardContent>
@@ -60,15 +69,17 @@ export function ProductCard({ product, onSelect, className }: ProductCardProps) 
           )}
           <div className="flex justify-between">
             <Text variant="small" className="text-muted-foreground">
-              {product.category}
+              {product.category || 'Uncategorized'}
             </Text>
             <Text variant="large" className="font-bold">
-              ${product.price.toFixed(2)}
+              {formatPrice(product.price)}
             </Text>
           </div>
-          <div className="text-xs text-muted-foreground">
-            Dimensions: {product.dimensions.width}" × {product.dimensions.height}" × {product.dimensions.depth}"
-          </div>
+          {product.dimensions && (
+            <div className="text-xs text-muted-foreground">
+              Dimensions: {getDimensions()}
+            </div>
+          )}
         </div>
       </CardContent>
       
@@ -82,5 +93,5 @@ export function ProductCard({ product, onSelect, className }: ProductCardProps) 
         </Button>
       </CardFooter>
     </Card>
-  )
+  );
 }

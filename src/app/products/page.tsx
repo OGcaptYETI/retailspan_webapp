@@ -2,19 +2,25 @@
 
 import React, { useEffect, useState } from "react";
 import Image from "next/image";
+import { Pencil, Trash2 } from "lucide-react";
 import DashboardLayout from "@/app/components/templates/layouts/DashboardLayout";
 import productApi from "@/lib/supabase/productApi";
-import { ProductForm } from "@/app/products/forms/ProductForm";
-import { ProductBulkUpload } from "@/app/products/ProductBulkUpload";
+import { ProductModal } from "@/app/products/ProductModal";
+import { ProductBulkUpload } from "./ProductBulkUpload";
+import { ProductGrid } from "@/app/products/components/ProductGrid";
+import { ProductFilter } from "@/app/products/components/ProductFilter";
 import { Button } from "@/app/components/atoms/buttons/Button";
-import { Modal } from "@/app/components/ui/modal";
-import { Tabs, TabList, Tab, TabPanels, TabPanel } from "@/app/components/ui/tabs";
+import { Tabs, TabList, TabPanels, TabPanel, Tab } from "@/app/components/ui/tabs";
 import { Table } from "@/app/components/molecules/Table";
-import BrandsPage from "@/app/products/brands/page";
-import CategoriesPage from "@/app/products/categories/page";
-import ManufacturersPage from "@/app/products/manufacturers/page";
-import UnitsPage from "@/app/products/units/page";
-import SellSheetPage from "@/app/products/SellSheets/page";
+import { Switch } from "@/app/components/ui/switch";
+import { toast } from "react-hot-toast";
+
+// Import product-related pages
+import BrandsPage from "./brands/page";
+import CategoriesPage from "./categories/page";
+import ManufacturersPage from "./manufacturers/page";
+import UnitsPage from "./units/page";
+import SellSheetPage from "./SellSheets/page";
 
 interface Product {
   id: string;
@@ -25,165 +31,178 @@ interface Product {
   category_name: string;
   base_unit_price: number;
   msrp: number;
+  wholesale_price: number;
   description?: string;
   image_url?: string;
-  width?: number;
-  height?: number;
-  depth?: number;
-  current_price?: number;
+  category_id: string;
+  brand_id: string;
+  manufacturer_id?: string;
+  is_active: boolean;
 }
 
 export default function ProductsPage() {
   const [products, setProducts] = useState<Product[]>([]);
+  const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
-  const [isFormOpen, setIsFormOpen] = useState(false);
+  const [isProductModalOpen, setIsProductModalOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState(0);
+  const [isGridView, setIsGridView] = useState(false);
+  const [filters, setFilters] = useState({
+    manufacturer: "",
+    category: "",
+    brand: "",
+    brandFamily: "",
+  });
 
-  // ✅ Fetch Products on Load
   useEffect(() => {
-    async function fetchProducts() {
-      try {
-        const data = await productApi.getProducts();
-        if (Array.isArray(data) && data.length > 0) {
-          setProducts(data);
-        } else {
-          setProducts([]);
-        }
-      } catch (error) {
-        console.error("Error fetching products:", error);
-      } finally {
-        setIsLoading(false);
-      }
-    }
     fetchProducts();
   }, []);
 
-  // ✅ Handle Adding New Product
-  const handleAddProduct = () => {
-    setSelectedProduct(null);
-    setIsFormOpen(true);
-  };
-
-  // ✅ Handle Editing Product
-  const handleEditClick = (product: Product) => {
-    setSelectedProduct(product);
-    setIsFormOpen(true);
-  };
-
-  // ✅ Refresh Data After Form Submission
-  const handleFormSuccess = async () => {
-    setIsFormOpen(false);
+  const fetchProducts = async () => {
     try {
+      setIsLoading(true);
       const data = await productApi.getProducts();
-      setProducts(data.length > 0 ? data : []);
+      setProducts(Array.isArray(data) ? data : []);
+      setFilteredProducts(Array.isArray(data) ? data : []);
     } catch (error) {
-      console.error("Error refreshing products:", error);
+      console.error("Error fetching products:", error);
+      toast.error("Failed to load products");
+    } finally {
+      setIsLoading(false);
     }
+  };
+
+  const handleFilterChange = (newFilters: typeof filters) => {
+    setFilters(newFilters);
+    let filtered = products;
+
+    if (newFilters.manufacturer) {
+      filtered = filtered.filter((p) => p.manufacturer_id === newFilters.manufacturer);
+    }
+    if (newFilters.category) {
+      filtered = filtered.filter((p) => p.category_id === newFilters.category);
+    }
+    if (newFilters.brand) {
+      filtered = filtered.filter((p) => p.brand_id === newFilters.brand);
+    }
+    setFilteredProducts(filtered);
   };
 
   return (
     <DashboardLayout>
-      <div className="flex flex-col min-h-screen bg-background">
-        <div className="flex-1 p-6 space-y-6">
-          <div className="max-w-[2000px] mx-auto w-full">
-            <h1 className="text-2xl font-bold text-primary">Products</h1>
-            <p className="text-sm text-muted-foreground mt-2">
-              Manage your products, brands, categories, and manufacturers. Use the tabs to navigate.
-            </p>
+      <div className="p-6 space-y-6">
+        <Tabs value={activeTab} onValueChange={setActiveTab}>
+          <TabList className="border-b border-border">
+            <Tab value={0}>Products</Tab>
+            <Tab value={1}>Brands</Tab>
+            <Tab value={2}>Categories</Tab>
+            <Tab value={3}>Manufacturers</Tab>
+            <Tab value={4}>Units</Tab>
+            <Tab value={5}>Sell Sheets</Tab>
+          </TabList>
 
-            {/* ✅ Product Details Section */}
-            {selectedProduct && (
-              <div className="mt-6 p-4 bg-card text-card-foreground rounded-lg shadow-lg flex items-start space-x-6">
-                <div className="relative w-24 h-24">
-                  <Image
-                    src={selectedProduct.image_url || "/placeholder.png"}
-                    alt={selectedProduct.name}
-                    className="object-cover rounded"
-                    fill
-                    sizes="(max-width: 96px) 100vw"
-                  />
-                </div>
-                <div className="flex-1">
-                  <h2 className="text-lg font-semibold">{selectedProduct.name}</h2>
-                  <p className="text-sm text-muted-foreground">{selectedProduct.description || "No description available."}</p>
-                  <p className="mt-2 text-sm">
-                    <strong>Dimensions:</strong> {selectedProduct.width || 0} × {selectedProduct.height || 0} × {selectedProduct.depth || 0}
-                  </p>
-                  <p className="text-sm">
-                    <strong>Price:</strong> ${selectedProduct.current_price || selectedProduct.base_unit_price}
-                  </p>
-                  <div className="mt-4 flex space-x-4">
-                    <Button variant="default" onClick={() => handleEditClick(selectedProduct)}>
-                      Edit Product
-                    </Button>
-                    <Button variant="destructive">Delete Product</Button>
-                  </div>
+          <TabPanels>
+            {/* Products Tab */}
+            <TabPanel value={0}>
+              {/* Product Filters */}
+              <ProductFilter filters={filters} onFilterChange={handleFilterChange} />
+
+              {/* View Toggle */}
+              <div className="flex justify-between items-center">
+                <Button variant="default" onClick={() => setIsProductModalOpen(true)}>
+                  Add Product
+                </Button>
+                <ProductBulkUpload onSuccess={fetchProducts} />
+                <div className="flex items-center gap-2">
+                  <span className="text-sm">Table View</span>
+                  <Switch checked={isGridView} onCheckedChange={setIsGridView} />
+                  <span className="text-sm">Grid View</span>
                 </div>
               </div>
-            )}
 
-            {/* ✅ Tabs Navigation */}
-            <div className="mt-6">
-              <Tabs activeIndex={activeTab} handleTabClick={setActiveTab}>
-                <TabList>
-                  <Tab>Products</Tab>
-                  <Tab>Brands</Tab>
-                  <Tab>Categories</Tab>
-                  <Tab>Manufacturers</Tab>
-                  <Tab>Units</Tab>
-                  <Tab>Sell Sheets</Tab>
-                </TabList>
+              {/* Grid or Table View */}
+              {isGridView ? (
+                <ProductGrid products={filteredProducts} onProductSelect={setSelectedProduct} />
+              ) : (
+                <div className="bg-card rounded-lg shadow-sm overflow-hidden mt-4">
+                  <Table
+                    data={filteredProducts}
+                    columns={[
+                      {
+                        key: "image",
+                        label: "Image",
+                        render: (_value, row: Product) => (
+                          <div className="w-12 h-12 flex items-center justify-center">
+                            {row?.image_url ? ( // ✅ Ensuring `row` is defined before accessing `image_url`
+                              <Image
+                                src={row.image_url}
+                                alt={row.name || "Product Image"}
+                                width={48}
+                                height={48}
+                                style={{ width: "auto", height: "auto", maxWidth: "100%", maxHeight: "100%" }} // ✅ Ensuring aspect ratio
+                                className="rounded-md object-contain"
+                              />
+                            ) : (
+                              <div className="w-12 h-12 flex items-center justify-center text-gray-500 border rounded-md">
+                                No Image
+                              </div>
+                            )}
+                          </div>
+                        ),
+                      },
+                    
+                      { key: "name", label: "Product Name" },
+                      { key: "brand_name", label: "Brand" },
+                      { key: "category_name", label: "Category" },
+                      { key: "sku", label: "SKU" },
+                      {
+                        key: "actions",
+                        label: "Actions",
+                        render: (value: unknown, row: Record<string, unknown>) => (
+                          <div className="flex gap-2">
+                            <button onClick={() => setSelectedProduct(row)} className="p-2 rounded-lg bg-gray-200 hover:bg-gray-300">
+                              <Pencil size={18} />
+                            </button>
+                            <button onClick={() => console.log("Delete product")} className="p-2 rounded-lg bg-red-500 text-white hover:bg-red-600">
+                              <Trash2 size={18} />
+                            </button>
+                          </div>
+                        ),
+                      },
+                    ]}
+                    onRowClick={(row) => setSelectedProduct(row as Product)}
+                    isLoading={isLoading}
+                    rowClassName={(row) => (selectedProduct?.id === (row as Product).id ? "bg-gray-100" : "")}
+                  />
+                </div>
+              )}
+            </TabPanel>
 
-                <TabPanels>
-                  {/* Products Tab */}
-                  <TabPanel>
-                    <div className="flex flex-col space-y-6">
-                      <div className="flex items-center justify-between">
-                        <Button variant="default" onClick={handleAddProduct}>
-                          Add Product
-                        </Button>
-                        <ProductBulkUpload />
-                      </div>
-
-                      {/* ✅ Products Table */}
-                      <div className="bg-card rounded-lg shadow-sm overflow-hidden">
-                        <Table
-                          data={products}
-                          columns={[
-                            { key: "name", label: "Name" },
-                            { key: "sku", label: "SKU" },
-                            { key: "upc", label: "UPC" },
-                            { key: "brand_name", label: "Brand" },
-                            { key: "category_name", label: "Category" },
-                            { key: "base_unit_price", label: "Base Price" },
-                            { key: "msrp", label: "MSRP" },
-                          ]}
-                          onEditClick={(row) => handleEditClick(row as Product)}
-                          searchPlaceholder="Search Products..."
-                          isLoading={isLoading}
-                        />
-                      </div>
-                    </div>
-                  </TabPanel>
-
-                  {/* Other Tabs */}
-                  <TabPanel><BrandsPage /></TabPanel>
-                  <TabPanel><CategoriesPage /></TabPanel>
-                  <TabPanel><ManufacturersPage /></TabPanel>
-                  <TabPanel><UnitsPage /></TabPanel>
-                  <TabPanel><SellSheetPage /></TabPanel>
-                </TabPanels>
-              </Tabs>
-            </div>
-          </div>
-        </div>
-
-        {/* ✅ Product Form Modal */}
-        <Modal isOpen={isFormOpen} onClose={() => setIsFormOpen(false)}>
-          <ProductForm product={selectedProduct} onSubmitSuccess={handleFormSuccess} onCancel={() => setIsFormOpen(false)} />
-        </Modal>
+            {/* Other Tabs */}
+            <TabPanel value={1}>
+              <BrandsPage />
+            </TabPanel>
+            <TabPanel value={2}>
+              <CategoriesPage />
+            </TabPanel>
+            <TabPanel value={3}>
+              <ManufacturersPage />
+            </TabPanel>
+            <TabPanel value={4}>
+              <UnitsPage />
+            </TabPanel>
+            <TabPanel value={5}>
+              <SellSheetPage />
+            </TabPanel>
+          </TabPanels>
+        </Tabs>
       </div>
+
+      <ProductModal isOpen={isProductModalOpen} onClose={() => setIsProductModalOpen(false)} product={selectedProduct} />
     </DashboardLayout>
   );
 }
+
+
+

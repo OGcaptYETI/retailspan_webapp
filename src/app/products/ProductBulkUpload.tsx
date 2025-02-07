@@ -5,6 +5,12 @@ import productApi from "@/lib/supabase/productApi";
 import ExcelJS from "exceljs";
 import toast from "react-hot-toast";
 
+interface ProductBulkUploadProps {
+
+  onSuccess: () => Promise<void>;
+
+}
+
 interface Product {
   name: string;
   sku: string;
@@ -17,7 +23,7 @@ interface Product {
 import { Button } from "@/app/components/atoms/buttons";
 import { Text, Label } from "@/app/components/atoms/typography";
 
-export function ProductBulkUpload() {
+export function ProductBulkUpload({ onSuccess }: ProductBulkUploadProps): JSX.Element {
   const [file, setFile] = useState<File | null>(null);
   const [errors, setErrors] = useState<string[]>([]);
   const [isUploading, setIsUploading] = useState(false);
@@ -49,6 +55,7 @@ export function ProductBulkUpload() {
       }
 
       await uploadProducts(data);
+      await onSuccess();
       alert("✅ Products uploaded successfully!");
     } catch (error) {
       console.error("Upload failed:", error);

@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useMemo } from "react";
+import Image from "next/image";
 import { Button } from "@/app/components/atoms/buttons";
 import { Input } from "@/app/components/atoms/inputs";
 import { cn } from "@/lib/utils/cn";
@@ -190,6 +191,9 @@ export const Table: React.FC<TableProps> = ({
     </div>
   );
 };
+
+// ✅ Updated Image Column (Paste this inside `columns` in your `ProductsPage.tsx`)
+
 
 
 

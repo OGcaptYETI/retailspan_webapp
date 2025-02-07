@@ -264,11 +264,21 @@ export interface Database {
           id: string;
           name: string;
           sku: string;
+          upc?: string;
+          description?: string;
           category_id: string;
           brand_id: string;
+          unit_measure_id?: string;
           base_unit_price: number;
           wholesale_price: number;
           msrp: number;
+          weight?: number;
+          width?: number;
+          height?: number;
+          depth?: number;
+          pack_size?: string;
+          is_active: boolean;
+          image_url?: string;
           created_at: string;
           updated_at: string;
         }
@@ -297,29 +307,122 @@ export interface Database {
         
           category_id: string;
         
-          levels: { [key: string]: number };
-        
-          enhancement: string;
-        
-          status: string;
-        
-          expires_at: string;
-        
-        }
-
-        export interface Product {
-          id: string;
-          name: string;
-          sku: string;
-          category_id: string;
-          brand_id: string;
-          base_unit_price: number;
-          wholesale_price: number;
-          msrp: number;
+        // Remove this duplicate interface
+          is_active: boolean;
+          image_url: string;
+          unit_measure_id: string;
           created_at: string;
           updated_at: string;
           dimensions: {
             width: number;
             height: number;
           };
+        } 
+        export interface ProductFormData {
+          name: string;
+          sku: string;
+          category_id: string;
+          brand_id: string;
+          base_unit_price: string;
+          wholesale_price: string;
+          msrp: string;
+          dimensions: {
+            width: string;
+            height: string;
+          };
+        }
+
+        export interface Product {
+          id: string;
+          name: string;
+          sku: string;
+          upc?: string;
+          description?: string;
+          category_id: string;
+          brand_id: string;
+          unit_measure_id?: string;
+          base_unit_price: number;
+          wholesale_price: number;
+          msrp: number;
+          weight?: number;
+          width?: number;
+          height?: number;
+          depth?: number;
+          pack_size?: string;
+          is_active: boolean;
+          image_url?: string;
+          created_at: string;
+          updated_at: string;
+        }
+
+        export interface Contract {
+          id: string;
+          name: string;
+          manufacturer_id: string;
+          category_id: string;
+          levels: ContractLevel[];
+          enhancement: number;  
+          status: 'active' | 'pending' | 'expired';
+          updated_at: string;
+          expires_at: string;
+        }
+
+        export interface ContractLevel {
+          id: string;
+          name: string;
+          discount: number;
+        }
+        export interface ContractFormData {
+          name: string;
+          manufacturer_id: string;
+          category_id: string;
+          levels: { [key: string]: number };
+          enhancement: string;
+          status: string;
+         expires_at: string;
+        }
+
+        export interface ContractResponse extends ContractFormData {
+          id: string;
+          created_at: string;
+          updated_at: string;
+        }
+
+        export interface ProductFormProps {
+
+          onSubmit: (productData: Product) => Promise<void>;
+        
+          onCancel: () => void;
+        
+          product?: Product;
+        }
+
+        export interface BrandFamily {
+          id: string;
+          name: string;
+          brand_id: string;
+        }
+        export interface BrandFamily {
+          id: string;
+          name: string;
+          brand_id: string;
+          created_at?: string;
+          updated_at?: string;
+        }
+
+        export interface BrandFamilyFormData {
+          name: string;
+          brand_id: string;
+          description?: string;
+        }
+
+        export interface BrandFamilyResponse extends BrandFamilyFormData {    
+          id: string;
+          created_at: string;
+          updated_at: string;
+        }
+        export interface BrandFamilyFormData {
+          name: string;
+          brand_id: string;
+          description?: string;
         }

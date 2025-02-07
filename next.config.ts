@@ -1,14 +1,20 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  // Remove experimental.appDir; not needed in Next 13.4+ or Next 15
-  // e.g. experimental: {
-  //   appDir: true, // <- Delete or comment this out
-  // },
-
-  // Other config options remain:
   reactStrictMode: true,
+  images: {
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'jrdwwbnjjqiadzdromfs.supabase.co',
+        pathname: '/storage/v1/object/public/product_images/**',
+      }
+    ],
+  },
 };
 
 export default nextConfig;
+
+
+
 

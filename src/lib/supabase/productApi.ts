@@ -1,5 +1,49 @@
 import { supabase } from "@/lib/supabase/client";
 
+interface Category {
+  id: string;
+  name: string;
+  parent_id?: string | null;
+  created_at?: string;
+  updated_at?: string;
+}
+
+interface BrandFamily {
+  id: string;
+  name: string;
+  brand_id: string;
+  description?: string;
+}
+
+interface Brand {
+  id: string;
+  name: string;
+  manufacturer: string;
+  website?: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
+interface ProductUpdate {
+  name?: string;
+  sku?: string;
+  upc?: string;
+  description?: string;
+  base_unit_price?: number | null;
+  wholesale_price?: number | null;
+  msrp?: number | null;
+  weight?: number | null;
+  width?: number | null;
+  height?: number | null;
+  depth?: number | null;
+  pack_size?: string;
+  is_active?: boolean;
+  image_url?: string | null;
+  category_id?: string | null;
+  brand_id?: string | null;
+  unit_measure_id?: string | null;
+}
+
 const productApi = {
   // ✅ Fetch all products with related brand, category, and unit measure names
   async getProducts() {
@@ -17,6 +61,26 @@ const productApi = {
   
     if (error) throw error;
     return data;
+  },
+
+  async getBrandFamilies(): Promise<BrandFamily[]> {
+    const { data, error } = await supabase
+      .from('brand_families')
+      .select(`
+        id,
+        name,
+        brand_id,
+        created_at,
+        updated_at
+      `)
+      .order('name');
+
+    if (error) {
+      console.error('Error fetching brand families:', error);
+      throw error;
+    }
+
+    return data || [];
   },
 
   // ✅ Fetch product by ID
@@ -46,7 +110,6 @@ const productApi = {
       msrp: product?.msrp || null,
       weight: product?.weight || null,
       width: product?.width || null,
-      height: product?.height || null,
       depth: product?.depth || null,
       pack_size: product?.pack_size || "1",
       image_url: product?.image_url || null,
@@ -66,7 +129,7 @@ const productApi = {
   },
 
   // ✅ Update an existing product
-  async updateProduct(productId: string | number, updates: { [key: string]: any }) {
+  async updateProduct(productId: string | number, updates: ProductUpdate) {
     const cleanedUpdates = {
       ...updates,
       category_id: updates?.category_id || null,
@@ -153,7 +216,7 @@ const productApi = {
   },
 
   // ✅ Update an existing manufacturer
-  async updateManufacturer(manufacturerId: string | number, updates: any) {
+  async updateManufacturer(manufacturerId: string | number, updates: { name?: string; website?: string }) {
     const { data, error } = await supabase
       .from("manufacturers")
       .update(updates)
@@ -380,18 +443,39 @@ const productApi = {
   },
 
   // ✅ Get subcategories for a specific category
-  async getSubcategories(parentId: string) {
-    const { data, error } = await supabase
-      .from("product_categories")
-      .select("*")
-      .eq("parent_id", parentId)
-      .order('name');
+  async getSubcategories(parentId?: string): Promise<Category[]> {
+    try {
+      const query = supabase
+        .from("product_categories")
+        .select(`
+          id,
+          name,
+          parent_id,
+          created_at,
+          updated_at
+        `)
+        .order('name');
 
-    if (error) {
-      console.error("Error fetching subcategories:", error);
+      // If parentId is provided and valid, add the filter
+      if (parentId && parentId.match(/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i)) {
+        query.eq("parent_id", parentId);
+      } else {
+        // If no valid parentId, get root categories
+        query.is("parent_id", null);
+      }
+
+      const { data, error } = await query;
+
+      if (error) {
+        console.error("Error fetching categories:", error);
+        throw new Error(`Failed to fetch categories: ${error.message}`);
+      }
+
+      return data || [];
+    } catch (error) {
+      console.error("Error in getSubcategories:", error);
       throw error;
     }
-    return data;
   },
 
   // ✅ Check category dependencies
@@ -437,24 +521,24 @@ const productApi = {
   },
 
   // ✅ Upload a sell sheet file
-  async uploadSellSheet(file: File) {
-    const filePath = `sell_sheets/${Date.now()}-${file.name}`;
-    const { data, error } = await supabase.storage
-      .from("sell_sheets")
-      .upload(filePath, file);
-    if (error) throw error;
+async uploadSellSheet(file: File) {
+  const filePath = `sell_sheets/${Date.now()}-${file.name}`;
+  const { error } = await supabase.storage
+    .from("sell_sheets")
+    .upload(filePath, file);
+  if (error) throw error;
 
-    const { data: publicUrlData } = supabase.storage
-      .from("sell_sheets")
-      .getPublicUrl(filePath);
+  const { data: publicUrlData } = supabase.storage
+    .from("sell_sheets")
+    .getPublicUrl(filePath);
 
-    return publicUrlData.publicUrl;
-  }
+  return publicUrlData.publicUrl;
+}
 };
 
 export default productApi;
 
-export const getBrands = async (): Promise<any[]> => {
+export const getBrands = async (): Promise<Brand[]> => {
   const { data, error } = await supabase
     .from("brands")
     .select("*")
@@ -468,5 +552,37 @@ export const getBrands = async (): Promise<any[]> => {
   console.log("✅ Brands from Supabase:", data);
   return data;
 };
-  
-  
+
+export const getBrandFamilies = async () => {
+  const { data, error } = await supabase
+    .from('brand_families')
+    .select('id, name, brand_id');
+
+  if (error) throw error;
+  return data;
+};
+
+export const getBrandById = async (brandId: string) => {
+  const { data, error } = await supabase
+    .from('brands')
+    .select('*')
+    .eq('id', brandId)
+    .single();
+
+  if (error) throw error;
+  return data;
+};
+
+export const getAllBrandFamilies = async () => {
+  const { data, error } = await supabase
+    .from('brand_families')
+    .select('*')
+    .order('name');
+
+  if (error) {
+    console.error('Error fetching brand families:', error);
+    throw error;
+  }
+
+  return data as BrandFamily[];
+};
